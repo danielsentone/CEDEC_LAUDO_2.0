@@ -37,6 +37,18 @@ const MapController = ({ lat, lng, ignoreRecenter }: { lat: number; lng: number,
   return null;
 };
 
+// Component to fix rendering issues by invalidating size
+const MapInvalidator = () => {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
+
 // Component to handle clicks
 const LocationMarker = ({ onSelect }: { onSelect: (lat: number, lng: number) => void }) => {
   const [position, setPosition] = useState<L.LatLng | null>(null);
@@ -73,8 +85,8 @@ export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLo
   };
 
   return (
-    <div id="map-print-container" className="relative w-full h-[400px] rounded-lg overflow-hidden border border-gray-300">
-      <div className="absolute top-2 right-2 z-[1000] bg-white p-2 rounded shadow flex gap-2">
+    <div id="map-print-container" className="relative w-full h-[400px] rounded-lg overflow-hidden border border-gray-300 z-0">
+      <div className="absolute top-2 right-2 z-[400] bg-white p-2 rounded shadow flex gap-2">
         <button 
             type="button"
             className={`px-3 py-1 text-xs font-bold rounded ${layer === 'hybrid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
@@ -122,9 +134,10 @@ export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLo
         )}
        
         <MapController lat={centerLat} lng={centerLng} ignoreRecenter={ignoreRecenter} />
+        <MapInvalidator />
         <LocationMarker onSelect={handleSelect} />
       </MapContainer>
-      <div className="bg-blue-50 text-blue-800 text-xs p-2 text-center border-t border-blue-100">
+      <div className="bg-blue-50 text-blue-800 text-xs p-2 text-center border-t border-blue-100 absolute bottom-0 w-full z-[400]">
         Clique no mapa para definir a localização exata e buscar o endereço automaticamente.
       </div>
     </div>

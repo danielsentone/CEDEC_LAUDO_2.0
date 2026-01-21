@@ -383,7 +383,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans pb-32">
+    <div className="min-h-screen bg-slate-100 font-sans pb-8">
       {/* Header with Defesa Civil Colors */}
       <header className="bg-blue-900 text-white shadow-lg sticky top-0 z-50 border-b-4 border-orange-500">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -796,13 +796,13 @@ function App() {
                 </div>
             </section>
 
-            {/* Submit Button - Fixed Footer */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur p-4 border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                <div className="max-w-5xl mx-auto flex justify-end gap-4 px-4">
+            {/* Submit Button - Static Footer */}
+            <div className="bg-white rounded-xl shadow-md p-6 border-t-4 border-gray-400">
+                <div className="flex flex-col md:flex-row justify-end gap-4">
                     <button 
                         type="button"
                         onClick={handlePreview}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-blue-800"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-blue-800"
                     >
                         <Eye size={20} />
                         Visualizar Laudo
@@ -810,7 +810,7 @@ function App() {
                     <button 
                         type="button"
                         onClick={handleDownload}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-orange-600"
+                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-orange-600"
                     >
                         <Save size={20} />
                         Emitir PDF
