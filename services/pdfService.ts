@@ -116,31 +116,69 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
   return 45; // Start content below header
 };
 
-// Function to draw standard vector footer
+// Function to draw colored vector footer
 const drawFooter = (doc: jsPDF, pageNumber: number, totalPages: number, pageWidth: number, pageHeight: number) => {
-    const footerY = pageHeight - 20; // Start of footer area
+    const footerHeight = 25;
+    const footerY = pageHeight - footerHeight; 
     
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.5);
-    doc.line(10, footerY, pageWidth - 10, footerY);
-    
-    doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
-    doc.setFont('helvetica', 'bold');
-    
-    let textY = footerY + 5;
-    doc.text('Coordenadoria Estadual de Defesa Civil - Paraná', pageWidth / 2, textY, { align: 'center' });
-    
-    textY += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.text('Rua Desembargador Motta, 3384 - Mercês - Curitiba - PR | CEP 80.430-200', pageWidth / 2, textY, { align: 'center' });
-    
-    textY += 4;
-    doc.text('www.defesacivil.pr.gov.br', pageWidth / 2, textY, { align: 'center' });
+    // Colored Bar Dimensions
+    const barHeight = 4; // Thickness of the line
+    const slantWidth = 6; // Width of the slant gap
+    const splitRatio = 0.80; // Split position (80% for blue, rest for green)
+    const splitX = pageWidth * splitRatio;
+    const gapSize = 1.5;
 
-    // Page number
+    // -- Draw Blue Bar (Left) --
+    // Shape: Rect from 0 to splitX, slant bottom-left to top-right
+    doc.setFillColor(0, 91, 159); // Standard Blue #005b9f
+    doc.path([
+        { op: 'm', c: [0, footerY] },
+        { op: 'l', c: [splitX, footerY] },
+        { op: 'l', c: [splitX - slantWidth, footerY + barHeight] },
+        { op: 'l', c: [0, footerY + barHeight] },
+        { op: 'h' }
+    ]);
+    doc.fill();
+    
+    // -- Draw Green Bar (Right) --
+    // Shape: Starts after gap, goes to end
+    const greenStartX = splitX + gapSize;
+    
+    doc.setFillColor(0, 157, 87); // Flag Green
+    doc.path([
+        { op: 'm', c: [greenStartX, footerY] },
+        { op: 'l', c: [pageWidth, footerY] },
+        { op: 'l', c: [pageWidth, footerY + barHeight] },
+        { op: 'l', c: [greenStartX - slantWidth, footerY + barHeight] },
+        { op: 'h' }
+    ]);
+    doc.fill();
+
+    // -- Footer Text --
     doc.setFontSize(8);
-    doc.text(`Página ${pageNumber} de ${totalPages}`, pageWidth - 15, pageHeight - 10, { align: 'right' });
+    doc.setTextColor(0, 0, 0); // Black text requested
+    doc.setFont('helvetica', 'normal');
+    
+    let textY = footerY + barHeight + 5;
+    const centerX = pageWidth / 2;
+    
+    // Line 1: Address
+    doc.text('Palácio das Araucárias - 1º andar - Setor C | Centro Cívico | Curitiba/PR | CEP 80.530-140', centerX, textY, { align: 'center' });
+    textY += 4;
+    
+    // Line 2: Contacts
+    doc.text('E-mail: defesacivil@defesacivil.pr.gov.br | Fone: (41) 3281-2500', centerX, textY, { align: 'center' });
+    textY += 4;
+    
+    // Line 3: Slogan
+    doc.setFont('helvetica', 'bold');
+    doc.text('“Defesa Civil somos todos nós”', centerX, textY, { align: 'center' });
+
+    // Page number (Small, bottom right, unobtrusive)
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`${pageNumber}/${totalPages}`, pageWidth - 5, pageHeight - 3, { align: 'right' });
 };
 
 
