@@ -12,12 +12,14 @@ import {
   PARANA_CITIES, 
   INITIAL_ENGINEERS, 
   DAMAGE_LOGIC, 
-  BRAZIL_STATES 
+  BRAZIL_STATES
 } from './constants';
+// Import logos from the assets directory
+import { BRASAO_PR_LOGO, DEFESA_CIVIL_PR_LOGO } from './assets/logos';
 import { MapPicker } from './components/MapPicker';
 import { DamageInput } from './components/DamageInput';
 import { generateLaudoPDF } from './services/pdfService';
-import { FileText, Save, MapPin, User, AlertTriangle, Building, Shield, Trash2, Edit, Lock, CheckCircle, XCircle, Trees, Eye, X, Download, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react';
+import { FileText, Save, MapPin, User, AlertTriangle, Building, Shield, Trash2, Edit, Lock, CheckCircle, XCircle, Trees, Eye, X, Download, Image as ImageIcon, Upload, Link as LinkIcon, Settings } from 'lucide-react';
 
 // Helper for CPF Mask
 const formatCPF = (value: string) => {
@@ -50,8 +52,8 @@ const validateCPF = (cpf: string) => {
   return true;
 };
 
-// Helper to process and trim whitespace from images
-const processAndTrimImage = (file: File): Promise<string> => {
+// Helper to process and trim whitespace from images (Accepts File or Blob)
+const processAndTrimImage = (file: File | Blob): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -112,11 +114,28 @@ const processAndTrimImage = (file: File): Promise<string> => {
           cutCtx.drawImage(canvas, minX, minY, width, height, 0, 0, width, height);
           resolve(cutCanvas.toDataURL('image/png'));
         };
+        // Handle loading errors for the image element
+        img.onerror = () => {
+            resolve(e.target?.result as string);
+        };
         img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
     });
   };
+
+// Helper to fetch an image from a URL and convert to Base64 (with trimming)
+const downloadAndProcessImage = async (url: string): Promise<string> => {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const blob = await response.blob();
+        return await processAndTrimImage(blob);
+    } catch (error) {
+        console.warn("Could not download/process image from URL (likely CORS). Using raw URL.", error);
+        return url; // Fallback to the URL string if fetch fails
+    }
+};
 
 function App() {
   // Load engineers from localStorage or use initial list
@@ -155,9 +174,39 @@ function App() {
     tipologiaOutro: '',
     danos: [],
     classificacao: '' as DamageClassification, // Force user selection
-    logoEsquerda: '',
-    logoDireita: ''
+    logoEsquerda: BRASAO_PR_LOGO,
+    logoDireita: DEFESA_CIVIL_PR_LOGO
   });
+
+  // Effect to automatically download and process default logos on mount
+  useEffect(() => {
+    const processDefaults = async () => {
+        let updates: Partial<LaudoForm> = {};
+        let changed = false;
+
+        // Check if logos are URLs and start with http (not already base64)
+        if (BRASAO_PR_LOGO.startsWith('http')) {
+            const processedLeft = await downloadAndProcessImage(BRASAO_PR_LOGO);
+            if (processedLeft !== BRASAO_PR_LOGO) {
+                updates.logoEsquerda = processedLeft;
+                changed = true;
+            }
+        }
+
+        if (DEFESA_CIVIL_PR_LOGO.startsWith('http')) {
+            const processedRight = await downloadAndProcessImage(DEFESA_CIVIL_PR_LOGO);
+            if (processedRight !== DEFESA_CIVIL_PR_LOGO) {
+                updates.logoDireita = processedRight;
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            setFormData(prev => ({ ...prev, ...updates }));
+        }
+    };
+    processDefaults();
+  }, []);
 
   // Auto-increment ID starting at 1, persisted in localStorage to simulate database sequence
   const [idLaudo] = useState(() => {
@@ -183,6 +232,9 @@ function App() {
   // Preview State
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Customization Visibility State
+  const [showCustomization, setShowCustomization] = useState(false);
 
   // Validation State
   const [cpfValid, setCpfValid] = useState<boolean | null>(null);
@@ -335,6 +387,23 @@ function App() {
       }
   };
 
+  // Handler for URL inputs - Downloads and processes the image
+  const handleUrlInput = async (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>, field: 'logoEsquerda' | 'logoDireita') => {
+    const target = e.target as HTMLInputElement;
+    const url = target.value;
+    
+    if (url && url.length > 5) {
+        // Show user something is happening (optional, but good UX would be a loading state)
+        // For now, we just process it.
+        const processedImage = await downloadAndProcessImage(url);
+        setFormData(prev => ({ ...prev, [field]: processedImage }));
+        
+        // Clear input value if it was a successful download (it will be replaced by the image view)
+        // If it failed and returned the URL, the image view will still try to render the URL.
+        target.value = ''; 
+    }
+  };
+
   const validateForm = () => {
     if (!selectedEngineer) { alert("Selecione um engenheiro"); return false; }
     if (!formData.municipio) { alert("Selecione um município"); return false; }
@@ -400,15 +469,16 @@ function App() {
       {/* Header with Defesa Civil Colors */}
       <header className="bg-blue-900 text-white shadow-lg sticky top-0 z-50 border-b-4 border-orange-500">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                <div className="bg-orange-500 p-2 rounded-lg shadow-md">
-                    <Shield size={32} className="text-white fill-blue-900" />
-                </div>
+            <div className="flex items-end gap-4">
+                <img 
+                    src={DEFESA_CIVIL_PR_LOGO} 
+                    alt="Defesa Civil PR" 
+                    className="h-20 md:h-24 w-auto drop-shadow-md"
+                />
                 <div>
-                    <h1 className="text-2xl font-black tracking-wide uppercase">Defesa Civil</h1>
-                    <p className="text-xs md:text-sm font-semibold text-blue-100 uppercase tracking-wider">
-                        Coordenadoria Estadual - Paraná
-                    </p>
+                    <h1 className="text-xl md:text-3xl font-black tracking-wide uppercase leading-none mb-2">
+                        Coordenadoria Estadual da Defesa Civil
+                    </h1>
                 </div>
             </div>
         </div>
@@ -750,110 +820,142 @@ function App() {
                 </div>
             </section>
 
-            {/* 6. Header Customization (Moved to Bottom) */}
-            <section className="bg-white rounded-xl shadow-md border-t-4 border-gray-400 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-2">
-                    <ImageIcon className="text-gray-600" size={24} />
-                    <h2 className="text-lg font-bold text-gray-800 uppercase">Personalização (Logos)</h2>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Left Logo */}
-                    <div>
-                        <label className={labelClass}>Logo Esquerda (Brasão)</label>
-                        <p className="text-xs text-gray-500 mb-2">Topo Esquerdo</p>
-                        
-                        {!formData.logoEsquerda ? (
-                             <div className="space-y-3">
-                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
-                                    <Upload className="text-gray-400 mb-2" />
-                                    <span className="text-sm text-gray-500 font-medium">Enviar Arquivo</span>
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'left')} />
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <LinkIcon size={14} className="text-gray-400" />
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        className={`${inputClass} pl-8 text-xs`} 
-                                        placeholder="Ou cole a URL da imagem aqui..." 
-                                        onBlur={(e) => e.target.value && setFormData(prev => ({ ...prev, logoEsquerda: e.target.value }))}
-                                    />
-                                </div>
-                             </div>
-                        ) : (
-                            <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
-                                <img src={formData.logoEsquerda} alt="Logo Esquerda" className="max-h-full max-w-full object-contain" />
-                                <button 
-                                    type="button" 
-                                    onClick={() => removeLogo('left')}
-                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        )}
+            {/* 6. Header Customization (Conditional) */}
+            {showCustomization && (
+                <section className="bg-white rounded-xl shadow-md border-t-4 border-gray-400 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+                        <ImageIcon className="text-gray-600" size={24} />
+                        <h2 className="text-lg font-bold text-gray-800 uppercase">Personalização (Logos)</h2>
                     </div>
-
-                    {/* Right Logo */}
-                    <div>
-                        <label className={labelClass}>Logo Direita (Defesa Civil)</label>
-                        <p className="text-xs text-gray-500 mb-2">Topo Direito</p>
-                        
-                        {!formData.logoDireita ? (
-                            <div className="space-y-3">
-                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
-                                    <Upload className="text-gray-400 mb-2" />
-                                    <span className="text-sm text-gray-500 font-medium">Enviar Arquivo</span>
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'right')} />
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <LinkIcon size={14} className="text-gray-400" />
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Left Logo */}
+                        <div>
+                            <label className={labelClass}>Logo Esquerda (Brasão)</label>
+                            <p className="text-xs text-gray-500 mb-2">Topo Esquerdo</p>
+                            
+                            {!formData.logoEsquerda ? (
+                                <div className="space-y-3">
+                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
+                                        <Upload className="text-gray-400 mb-2" />
+                                        <span className="text-sm text-gray-500 font-medium">Enviar Arquivo</span>
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'left')} />
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <LinkIcon size={14} className="text-gray-400" />
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            className={`${inputClass} pl-8 text-xs`} 
+                                            placeholder="Ou cole a URL da imagem aqui..." 
+                                            onBlur={(e) => handleUrlInput(e, 'logoEsquerda')}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleUrlInput(e, 'logoEsquerda')}
+                                        />
                                     </div>
-                                    <input 
-                                        type="text" 
-                                        className={`${inputClass} pl-8 text-xs`} 
-                                        placeholder="Ou cole a URL da imagem aqui..." 
-                                        onBlur={(e) => e.target.value && setFormData(prev => ({ ...prev, logoDireita: e.target.value }))}
-                                    />
                                 </div>
-                             </div>
-                        ) : (
-                            <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
-                                <img src={formData.logoDireita} alt="Logo Direita" className="max-h-full max-w-full object-contain" />
-                                <button 
-                                    type="button" 
-                                    onClick={() => removeLogo('right')}
-                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </section>
+                            ) : (
+                                <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
+                                    <img 
+                                        src={formData.logoEsquerda} 
+                                        alt="Logo Esquerda" 
+                                        className="max-h-full max-w-full object-contain"
+                                        onError={() => {
+                                            // Silent fallback or alert
+                                            setFormData(prev => ({ ...prev, logoEsquerda: '' }));
+                                        }}
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => removeLogo('left')}
+                                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
 
-            {/* Submit Button - Static Footer */}
+                        {/* Right Logo */}
+                        <div>
+                            <label className={labelClass}>Logo Direita (Defesa Civil)</label>
+                            <p className="text-xs text-gray-500 mb-2">Topo Direito</p>
+                            
+                            {!formData.logoDireita ? (
+                                <div className="space-y-3">
+                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
+                                        <Upload className="text-gray-400 mb-2" />
+                                        <span className="text-sm text-gray-500 font-medium">Enviar Arquivo</span>
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'right')} />
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <LinkIcon size={14} className="text-gray-400" />
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            className={`${inputClass} pl-8 text-xs`} 
+                                            placeholder="Ou cole a URL da imagem aqui..." 
+                                            onBlur={(e) => handleUrlInput(e, 'logoDireita')}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleUrlInput(e, 'logoDireita')}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
+                                    <img 
+                                        src={formData.logoDireita} 
+                                        alt="Logo Direita" 
+                                        className="max-h-full max-w-full object-contain" 
+                                        onError={() => {
+                                            setFormData(prev => ({ ...prev, logoDireita: '' }));
+                                        }}
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => removeLogo('right')}
+                                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Submit Button - Footer */}
             <div className="bg-white rounded-xl shadow-md p-6 border-t-4 border-gray-400">
-                <div className="flex flex-col md:flex-row justify-end gap-4">
-                    <button 
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    {/* Settings Trigger */}
+                    <button
                         type="button"
-                        onClick={handlePreview}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-blue-800"
+                        onClick={() => setShowCustomization(!showCustomization)}
+                        className="text-gray-500 hover:text-blue-900 hover:bg-gray-100 p-3 rounded-full transition-colors flex items-center gap-2 text-sm font-bold uppercase"
+                        title="Configurar Logos e Cabeçalho"
                     >
-                        <Eye size={20} />
-                        Visualizar Laudo
+                        <Settings size={24} />
                     </button>
-                    <button 
-                        type="button"
-                        onClick={handleDownload}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-orange-600"
-                    >
-                        <Save size={20} />
-                        Emitir PDF
-                    </button>
+
+                    {/* Main Actions */}
+                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                        <button 
+                            type="button"
+                            onClick={handlePreview}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-blue-800 w-full md:w-auto"
+                        >
+                            <Eye size={20} />
+                            Visualizar Laudo
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={handleDownload}
+                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-wide text-sm md:text-base border border-orange-600 w-full md:w-auto"
+                        >
+                            <Save size={20} />
+                            Emitir PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </form>
