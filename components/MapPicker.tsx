@@ -66,7 +66,7 @@ const LocationMarker = ({ onSelect }: { onSelect: (lat: number, lng: number) => 
 };
 
 export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLocationSelect }) => {
-  const [layer, setLayer] = useState<'osm' | 'sat' | 'hybrid'>('sat'); // Default to Sat for visual report
+  const [layer, setLayer] = useState<'osm' | 'sat' | 'hybrid'>('hybrid'); // Default to Hybrid
   const ignoreRecenter = useRef(false);
 
   const handleSelect = async (lat: number, lng: number) => {

@@ -17,7 +17,7 @@ import {
 import { MapPicker } from './components/MapPicker';
 import { DamageInput } from './components/DamageInput';
 import { generateLaudoPDF } from './services/pdfService';
-import { FileText, Save, MapPin, User, AlertTriangle, Building, Shield, Trash2, Edit, Lock, CheckCircle, XCircle, Trees, Eye, X, Download, Image as ImageIcon, Upload } from 'lucide-react';
+import { FileText, Save, MapPin, User, AlertTriangle, Building, Shield, Trash2, Edit, Lock, CheckCircle, XCircle, Trees, Eye, X, Download, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react';
 
 // Helper for CPF Mask
 const formatCPF = (value: string) => {
@@ -417,65 +417,6 @@ function App() {
       <main className="max-w-5xl mx-auto px-4 py-8">
         <form className="space-y-8">
             
-            {/* 0. Header Customization */}
-            <section className="bg-white rounded-xl shadow-md border-t-4 border-gray-400 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-2">
-                    <ImageIcon className="text-gray-600" size={24} />
-                    <h2 className="text-lg font-bold text-gray-800 uppercase">Personalização (Logos)</h2>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Left Logo */}
-                    <div>
-                        <label className={labelClass}>Logo Esquerda (Brasão)</label>
-                        <p className="text-xs text-gray-500 mb-2">Topo Esquerdo</p>
-                        
-                        {!formData.logoEsquerda ? (
-                             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
-                                <Upload className="text-gray-400 mb-2" />
-                                <span className="text-sm text-gray-500 font-medium">Enviar Imagem</span>
-                                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'left')} />
-                             </label>
-                        ) : (
-                            <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
-                                <img src={formData.logoEsquerda} alt="Logo Esquerda" className="max-h-full max-w-full object-contain" />
-                                <button 
-                                    type="button" 
-                                    onClick={() => removeLogo('left')}
-                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right Logo */}
-                    <div>
-                        <label className={labelClass}>Logo Direita (Defesa Civil)</label>
-                        <p className="text-xs text-gray-500 mb-2">Topo Direito</p>
-                        
-                        {!formData.logoDireita ? (
-                             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
-                                <Upload className="text-gray-400 mb-2" />
-                                <span className="text-sm text-gray-500 font-medium">Enviar Imagem</span>
-                                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'right')} />
-                             </label>
-                        ) : (
-                            <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
-                                <img src={formData.logoDireita} alt="Logo Direita" className="max-h-full max-w-full object-contain" />
-                                <button 
-                                    type="button" 
-                                    onClick={() => removeLogo('right')}
-                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </section>
-
             {/* 1. Basic Info Section */}
             <section className="bg-white rounded-xl shadow-md border-t-4 border-blue-600 overflow-hidden">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-2">
@@ -805,6 +746,91 @@ function App() {
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                         <span className="block text-xs font-bold text-orange-600 uppercase">Percentual Estimado</span>
                         <div className="text-xl font-black text-gray-800 mt-1">{damageStats.percent}</div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 6. Header Customization (Moved to Bottom) */}
+            <section className="bg-white rounded-xl shadow-md border-t-4 border-gray-400 overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+                    <ImageIcon className="text-gray-600" size={24} />
+                    <h2 className="text-lg font-bold text-gray-800 uppercase">Personalização (Logos)</h2>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left Logo */}
+                    <div>
+                        <label className={labelClass}>Logo Esquerda (Brasão)</label>
+                        <p className="text-xs text-gray-500 mb-2">Topo Esquerdo</p>
+                        
+                        {!formData.logoEsquerda ? (
+                             <div className="space-y-3">
+                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
+                                    <Upload className="text-gray-400 mb-2" />
+                                    <span className="text-sm text-gray-500 font-medium">Enviar Arquivo</span>
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'left')} />
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <LinkIcon size={14} className="text-gray-400" />
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        className={`${inputClass} pl-8 text-xs`} 
+                                        placeholder="Ou cole a URL da imagem aqui..." 
+                                        onBlur={(e) => e.target.value && setFormData(prev => ({ ...prev, logoEsquerda: e.target.value }))}
+                                    />
+                                </div>
+                             </div>
+                        ) : (
+                            <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
+                                <img src={formData.logoEsquerda} alt="Logo Esquerda" className="max-h-full max-w-full object-contain" />
+                                <button 
+                                    type="button" 
+                                    onClick={() => removeLogo('left')}
+                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Logo */}
+                    <div>
+                        <label className={labelClass}>Logo Direita (Defesa Civil)</label>
+                        <p className="text-xs text-gray-500 mb-2">Topo Direito</p>
+                        
+                        {!formData.logoDireita ? (
+                            <div className="space-y-3">
+                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors">
+                                    <Upload className="text-gray-400 mb-2" />
+                                    <span className="text-sm text-gray-500 font-medium">Enviar Arquivo</span>
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e, 'right')} />
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <LinkIcon size={14} className="text-gray-400" />
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        className={`${inputClass} pl-8 text-xs`} 
+                                        placeholder="Ou cole a URL da imagem aqui..." 
+                                        onBlur={(e) => e.target.value && setFormData(prev => ({ ...prev, logoDireita: e.target.value }))}
+                                    />
+                                </div>
+                             </div>
+                        ) : (
+                            <div className="relative w-full h-32 border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50">
+                                <img src={formData.logoDireita} alt="Logo Direita" className="max-h-full max-w-full object-contain" />
+                                <button 
+                                    type="button" 
+                                    onClick={() => removeLogo('right')}
+                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
