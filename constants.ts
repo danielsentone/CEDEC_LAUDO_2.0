@@ -16,10 +16,10 @@ export const PARANA_CITIES: City[] = [
 ];
 
 export const INITIAL_ENGINEERS: Engineer[] = [
-  { id: '1', name: 'Daniel', crea: '98.123/D', state: 'PR' },
-  { id: '2', name: 'Débora', crea: '548.654/D', state: 'PR' },
-  { id: '3', name: 'Lorena', crea: '985.125/D', state: 'PR' },
-  { id: '4', name: 'Tainara', crea: '624.125/D', state: 'PR' },
+  { id: '1', name: 'Daniel', crea: '98.123/D', state: 'PR', institution: 'CEDEC' },
+  { id: '2', name: 'Débora', crea: '548.654/D', state: 'PR', institution: 'CEDEC' },
+  { id: '3', name: 'Lorena', crea: '985.125/D', state: 'PR', institution: 'CEDEC' },
+  { id: '4', name: 'Tainara', crea: '624.125/D', state: 'PR', institution: 'CEDEC' },
 ];
 
 export const BRAZIL_STATES = [

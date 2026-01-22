@@ -232,7 +232,7 @@ function App() {
 
   // Modal States
   const [showEngineerModal, setShowEngineerModal] = useState(false);
-  const [newEngineer, setNewEngineer] = useState<Partial<Engineer>>({ state: 'PR' });
+  const [newEngineer, setNewEngineer] = useState<Partial<Engineer>>({ state: 'PR', institution: 'Voluntário' });
   const [editingEngineer, setEditingEngineer] = useState<Engineer | null>(null);
 
   // Delete Confirmation States
@@ -277,7 +277,7 @@ function App() {
     const val = e.target.value;
     if (val === 'OUTRO') {
       setShowEngineerModal(true);
-      setNewEngineer({ state: 'PR', name: '', crea: '' });
+      setNewEngineer({ state: 'PR', name: '', crea: '', institution: 'Voluntário' });
       setEditingEngineer(null);
     } else {
       setFormData(prev => ({ ...prev, engineerId: val }));
@@ -287,9 +287,12 @@ function App() {
   const saveEngineer = () => {
     if (!newEngineer.name || !newEngineer.crea) return alert("Preencha nome e CREA");
     
+    // Logic: If editing, keep existing institution. If new, MUST be Voluntário.
+    const institutionToSave = editingEngineer ? editingEngineer.institution : 'Voluntário';
+
     if (editingEngineer) {
         // Edit existing
-        setEngineers(prev => prev.map(eng => eng.id === editingEngineer.id ? { ...eng, ...newEngineer } as Engineer : eng));
+        setEngineers(prev => prev.map(eng => eng.id === editingEngineer.id ? { ...eng, ...newEngineer, institution: institutionToSave } as Engineer : eng));
         setFormData(prev => ({ ...prev, engineerId: editingEngineer.id }));
     } else {
         // Create new
@@ -299,6 +302,7 @@ function App() {
             name: newEngineer.name!,
             crea: newEngineer.crea!,
             state: newEngineer.state,
+            institution: institutionToSave,
             isCustom: true
         };
         setEngineers(prev => [...prev, eng]);
@@ -310,8 +314,13 @@ function App() {
   const handleEditCurrentEngineer = () => {
       if (selectedEngineer) {
           setEditingEngineer(selectedEngineer);
-          // Default to PR if state is missing (e.g. from old data)
-          setNewEngineer({ ...selectedEngineer, state: selectedEngineer.state || 'PR' });
+          // Default to PR if state is missing
+          // Use existing institution or default to Voluntário if missing (for legacy data)
+          setNewEngineer({ 
+              ...selectedEngineer, 
+              state: selectedEngineer.state || 'PR',
+              institution: selectedEngineer.institution || 'Voluntário'
+          });
           setShowEngineerModal(true);
       }
   };
@@ -471,7 +480,13 @@ function App() {
     if (!validateForm()) return;
     if (selectedEngineer) {
         const mapImg = await captureMap();
+        // Generate PDF
         await generateLaudoPDF({ ...formData, id_laudo: idLaudo }, selectedEngineer, 'save', mapImg || undefined);
+        
+        // REFRESH PAGE AS REQUESTED
+        setTimeout(() => {
+             window.location.reload();
+        }, 1000);
     }
   };
 
@@ -1051,6 +1066,19 @@ function App() {
                             />
                         </div>
                     </div>
+                    {/* Institution Field - Read Only for UI logic */}
+                    <div>
+                        <label className={labelClass}>Instituição</label>
+                        <input 
+                            className={`${inputClass} bg-gray-100 text-gray-500 cursor-not-allowed`} 
+                            value={newEngineer.institution || 'Voluntário'} 
+                            readOnly
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">
+                            * Novos cadastros são definidos como Voluntários automaticamente.
+                        </p>
+                    </div>
+
                     <div className="flex gap-3 justify-end pt-6">
                         <button 
                             type="button"

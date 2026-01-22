@@ -417,6 +417,14 @@ export const generateLaudoPDF = async (
   checkPageBreak(40);
   yPos += 30;
   
+  // Electronic Signature for CEDEC
+  if (selectedEngineer.institution === 'CEDEC') {
+      doc.setTextColor(100, 100, 100); // Gray
+      doc.setFont('helvetica', 'italic');
+      doc.text('Assinado Eletronicamente', pageWidth / 2, yPos - 5, { align: 'center' });
+      doc.setTextColor(0, 0, 0); // Reset to Black
+  }
+
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(selectedEngineer.name.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });

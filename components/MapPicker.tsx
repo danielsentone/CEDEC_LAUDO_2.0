@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { City } from '../types';
+import { Locate, Loader2 } from 'lucide-react';
 
 // Fix Leaflet marker icons in React
 // @ts-ignore
@@ -30,7 +31,7 @@ const MapController = ({ lat, lng, ignoreRecenter }: { lat: number; lng: number,
         ignoreRecenter.current = false;
         return;
     }
-    // Only center if it wasn't a manual click interaction
+    // Center the map view
     map.setView([lat, lng], 15); 
   }, [lat, lng, map, ignoreRecenter]);
 
@@ -49,29 +50,29 @@ const MapInvalidator = () => {
   return null;
 }
 
-// Component to handle clicks
-const LocationMarker = ({ onSelect }: { onSelect: (lat: number, lng: number) => void }) => {
-  const [position, setPosition] = useState<L.LatLng | null>(null);
-  
+// Component to handle clicks - only notifies parent, doesn't manage marker state
+const ClickHandler = ({ onSelect }: { onSelect: (lat: number, lng: number, fromGPS: boolean) => void }) => {
   useMapEvents({
     click(e) {
-      setPosition(e.latlng);
-      onSelect(e.latlng.lat, e.latlng.lng);
+      onSelect(e.latlng.lat, e.latlng.lng, false);
     },
   });
-
-  return position === null ? null : (
-    <Marker position={position} />
-  );
+  return null;
 };
 
 export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLocationSelect }) => {
   const [layer, setLayer] = useState<'osm' | 'sat' | 'hybrid'>('hybrid'); // Default to Hybrid
+  const [isLocating, setIsLocating] = useState(false);
   const ignoreRecenter = useRef(false);
 
-  const handleSelect = async (lat: number, lng: number) => {
-    // Flag that the next update is due to user interaction, so don't recenter the map view
-    ignoreRecenter.current = true;
+  const handleSelect = async (lat: number, lng: number, fromGPS = false) => {
+    // Only ignore recenter if it's NOT from GPS (i.e. manual click)
+    // If it is from GPS, we want the map to move.
+    if (!fromGPS) {
+        ignoreRecenter.current = true;
+    } else {
+        ignoreRecenter.current = false;
+    }
 
     // Reverse Geocoding using OSM Nominatim
     try {
@@ -84,30 +85,69 @@ export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLo
     }
   };
 
+  const handleLocateUser = () => {
+      if (!navigator.geolocation) {
+          alert("Geolocalização não suportada pelo seu navegador.");
+          return;
+      }
+
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+          (position) => {
+              const { latitude, longitude } = position.coords;
+              handleSelect(latitude, longitude, true); // True = From GPS
+              setIsLocating(false);
+          },
+          (error) => {
+              console.error(error);
+              alert("Erro ao obter localização. Verifique as permissões de GPS.");
+              setIsLocating(false);
+          },
+          { enableHighAccuracy: true }
+      );
+  };
+
   return (
     <div id="map-print-container" className="relative w-full h-[400px] rounded-lg overflow-hidden border border-gray-300 z-0">
-      <div className="map-layer-controls absolute top-2 right-2 z-[400] bg-white p-2 rounded shadow flex gap-2">
-        <button 
+      
+      {/* Top Right Controls Container */}
+      <div className="absolute top-2 right-2 z-[400] flex flex-col gap-2 items-end">
+          {/* Layer Controls */}
+          <div className="bg-white p-2 rounded shadow flex gap-2">
+            <button 
+                type="button"
+                className={`px-3 py-1 text-xs font-bold rounded ${layer === 'hybrid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                onClick={() => setLayer('hybrid')}
+            >
+                Híbrido
+            </button>
+            <button 
+                type="button"
+                className={`px-3 py-1 text-xs font-bold rounded ${layer === 'sat' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                onClick={() => setLayer('sat')}
+            >
+                Satélite
+            </button>
+            <button 
+                type="button"
+                className={`px-3 py-1 text-xs font-bold rounded ${layer === 'osm' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                onClick={() => setLayer('osm')}
+            >
+                Mapa
+            </button>
+          </div>
+
+          {/* GPS Button */}
+          <button
             type="button"
-            className={`px-3 py-1 text-xs font-bold rounded ${layer === 'hybrid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-            onClick={() => setLayer('hybrid')}
-        >
-            Híbrido
-        </button>
-        <button 
-            type="button"
-            className={`px-3 py-1 text-xs font-bold rounded ${layer === 'sat' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-            onClick={() => setLayer('sat')}
-        >
-            Satélite
-        </button>
-        <button 
-            type="button"
-            className={`px-3 py-1 text-xs font-bold rounded ${layer === 'osm' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-            onClick={() => setLayer('osm')}
-        >
-            Mapa
-        </button>
+            onClick={handleLocateUser}
+            disabled={isLocating}
+            className="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded shadow-lg flex items-center gap-2 text-xs font-bold uppercase transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Usar minha localização atual (GPS)"
+          >
+            {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Locate size={16} />}
+            Minha Localização
+          </button>
       </div>
 
       <MapContainer center={[centerLat, centerLng]} zoom={15} style={{ height: '100%', width: '100%' }}>
@@ -135,7 +175,9 @@ export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLo
        
         <MapController lat={centerLat} lng={centerLng} ignoreRecenter={ignoreRecenter} />
         <MapInvalidator />
-        <LocationMarker onSelect={handleSelect} />
+        {/* The Marker is now controlled by props, so it always matches the form data (GPS or Manual) */}
+        <Marker position={[centerLat, centerLng]} />
+        <ClickHandler onSelect={handleSelect} />
       </MapContainer>
       <div className="map-instruction bg-blue-50 text-blue-800 text-xs p-2 text-center border-t border-blue-100 absolute bottom-0 w-full z-[400]">
         Clique no mapa para definir a localização exata e buscar o endereço automaticamente.

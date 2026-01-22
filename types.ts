@@ -3,6 +3,7 @@ export interface Engineer {
   name: string;
   crea: string;
   state?: string; // For new engineers
+  institution?: string; // 'CEDEC' or 'Voluntário'
   isCustom?: boolean;
 }
 
