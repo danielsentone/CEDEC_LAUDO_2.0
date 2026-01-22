@@ -86,7 +86,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLo
 
   return (
     <div id="map-print-container" className="relative w-full h-[400px] rounded-lg overflow-hidden border border-gray-300 z-0">
-      <div className="absolute top-2 right-2 z-[400] bg-white p-2 rounded shadow flex gap-2">
+      <div className="map-layer-controls absolute top-2 right-2 z-[400] bg-white p-2 rounded shadow flex gap-2">
         <button 
             type="button"
             className={`px-3 py-1 text-xs font-bold rounded ${layer === 'hybrid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
@@ -137,7 +137,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLo
         <MapInvalidator />
         <LocationMarker onSelect={handleSelect} />
       </MapContainer>
-      <div className="bg-blue-50 text-blue-800 text-xs p-2 text-center border-t border-blue-100 absolute bottom-0 w-full z-[400]">
+      <div className="map-instruction bg-blue-50 text-blue-800 text-xs p-2 text-center border-t border-blue-100 absolute bottom-0 w-full z-[400]">
         Clique no mapa para definir a localização exata e buscar o endereço automaticamente.
       </div>
     </div>

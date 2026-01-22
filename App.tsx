@@ -352,7 +352,20 @@ function App() {
             useCORS: true,
             allowTaint: false,
             logging: false,
-            scale: 2 // Improved resolution
+            scale: 2, // Improved resolution
+            onclone: (clonedDoc) => {
+                const elementsToHide = [
+                    '.leaflet-control-container', // Zoom controls, attribution, etc.
+                    '.map-layer-controls',        // Custom layer switcher buttons
+                    '.map-instruction',           // Bottom instruction text
+                    '.leaflet-marker-icon',       // Hide existing marker (we use vector pin in PDF)
+                    '.leaflet-marker-shadow'
+                ];
+                elementsToHide.forEach(selector => {
+                    const el = clonedDoc.querySelector(selector);
+                    if (el) (el as HTMLElement).style.display = 'none';
+                });
+            }
         });
         return canvas.toDataURL('image/png');
     } catch (e) {
