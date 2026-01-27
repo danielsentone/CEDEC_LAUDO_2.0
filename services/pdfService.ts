@@ -8,6 +8,11 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
   // Define distinct box sizes to balance visual weight
   const logoBoxSizeRight = 25; 
   const logoBoxSizeLeft = 34; 
+
+  // Define a common baseline Y coordinate for logos to sit on.
+  // This ensures they are aligned by their bottom edge.
+  // We use the approximate height of the largest box + headerStart
+  const logoBaseline = headerStart + 32;
   
   // --- Center Text ---
   // Calculates the visual center between the two logos to ensure equal spacing
@@ -38,7 +43,6 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
 
   // --- Right Logo (Defesa Civil) ---
   const logoRightX = pageWidth - margin - logoBoxSizeRight;
-  const logoY = headerStart;
 
   if (logoRight) {
      try {
@@ -54,14 +58,16 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
         }
         
         const x = logoRightX + (logoBoxSizeRight - w) / 2;
-        const y = logoY + (logoBoxSizeRight - h) / 2;
+        // Align by bottom: Baseline minus height
+        const y = logoBaseline - h;
 
         doc.addImage(logoRight, 'PNG', x, y, w, h);
      } catch(e) { console.warn("Error adding right logo", e); }
   } else {
       // Fallback
       doc.setFillColor(234, 88, 12); 
-      doc.rect(logoRightX, logoY, logoBoxSizeRight, logoBoxSizeRight, 'F');
+      // Align fallback box to bottom as well
+      doc.rect(logoRightX, logoBaseline - logoBoxSizeRight, logoBoxSizeRight, logoBoxSizeRight, 'F');
   }
 
   // --- Left Logo (Brasão) ---
@@ -81,7 +87,8 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
         }
         
         const x = logoLeftX + (logoBoxSizeLeft - w) / 2;
-        const y = logoY + (logoBoxSizeLeft - h) / 2;
+        // Align by bottom: Baseline minus height
+        const y = logoBaseline - h;
 
         doc.addImage(logoLeft, 'PNG', x, y, w, h);
       } catch(e) { console.warn("Error adding left logo", e); }
@@ -482,7 +489,32 @@ export const generateLaudoPDF = async (
 
   // Output
   if (mode === 'save') {
-    doc.save(`Laudo_${data.municipio}_${data.id_laudo || 'novo'}.pdf`);
+    // Filename Logic: MUNICIPIO_REQUERENTE_DATA.pdf
+    const cleanText = (text: string) => {
+        return text
+            .normalize('NFD') // Decompose combined characters (accents)
+            .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+            .toUpperCase()
+            .replace(/[^A-Z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphen
+            .replace(/^-+|-+$/g, ''); // Trim leading/trailing hyphens
+    };
+
+    const formatDateForFilename = (dateStr: string) => {
+        // Expects YYYY-MM-DD
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}${parts[1]}${parts[0]}`; // DDMMYYYY
+        }
+        return dateStr.replace(/[^0-9]/g, '');
+    };
+
+    const fileNameMunicipio = cleanText(data.municipio);
+    const fileNameRequerente = cleanText(data.requerente || 'NAO-INFORMADO');
+    const fileNameData = formatDateForFilename(data.data);
+
+    const finalFileName = `${fileNameMunicipio}_${fileNameRequerente}_${fileNameData}.pdf`;
+
+    doc.save(finalFileName);
   } else {
     const blob = doc.output('blob');
     return URL.createObjectURL(blob);
