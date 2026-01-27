@@ -38,7 +38,7 @@ export enum BuildingTypology {
 }
 
 export enum DamageClassification {
-  MINIMOS = 'Danos Mínimos',
+  SEM_DANOS = 'Sem Danos',
   PARCIAIS = 'Danos Parciais',
   SEVEROS = 'Danos Severos',
   RUINA = 'Ruína',

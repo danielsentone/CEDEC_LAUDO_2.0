@@ -13,12 +13,20 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
 
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(11);
+  
+  // Primeira linha em Negrito (ESTADO DO PARANÁ)
   doc.setFont('helvetica', 'bold');
   doc.text('ESTADO DO PARANÁ', centerX, textY, { align: 'center' });
   
+  // Demais linhas em fonte Normal (conforme a imagem oficial enviada)
+  doc.setFont('helvetica', 'normal');
+
   textY += 5;
   doc.text('COORDENADORIA ESTADUAL DA DEFESA CIVIL', centerX, textY, { align: 'center' });
   
+  textY += 5;
+  doc.text('DIVISÃO DE CONTRATOS, CONVÊNIOS E FUNDOS', centerX, textY, { align: 'center' });
+
   textY += 5;
   doc.text('FUNDO ESTADUAL PARA CALAMIDADES PÚBLICAS', centerX, textY, { align: 'center' });
 
