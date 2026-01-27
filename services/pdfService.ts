@@ -7,10 +7,9 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
   
   // Define distinct box sizes to balance visual weight
   const logoBoxSizeRight = 25; 
-  const logoBoxSizeLeft = 34; // Increased from 25 to 34 to match visual proportion with Defesa Civil logo
+  const logoBoxSizeLeft = 34; 
   
   // --- Center Text ---
-  // We draw text first or concurrently. The logos sit on sides.
   const centerX = pageWidth / 2;
   let textY = headerStart + 5;
 
@@ -21,7 +20,7 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
   doc.setFont('helvetica', 'bold');
   doc.text('ESTADO DO PARANÁ', centerX, textY, { align: 'center' });
   
-  // Demais linhas em fonte Normal (conforme a imagem oficial enviada)
+  // Demais linhas em fonte Normal
   doc.setFont('helvetica', 'normal');
 
   textY += 5;
@@ -44,50 +43,21 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
         let w = logoBoxSizeRight;
         let h = logoBoxSizeRight;
         
-        // Calculate dimensions to contain within box (preserve aspect ratio)
         if (ratio > 1) {
             h = w / ratio;
         } else {
             w = h * ratio;
         }
         
-        // Center vertically and horizontally in the box
         const x = logoRightX + (logoBoxSizeRight - w) / 2;
         const y = logoY + (logoBoxSizeRight - h) / 2;
 
         doc.addImage(logoRight, 'PNG', x, y, w, h);
      } catch(e) { console.warn("Error adding right logo", e); }
   } else {
-      // Fallback: Vector Simulation of Defesa Civil PR Logo
-      // Orange Box
-      doc.setFillColor(234, 88, 12); // Orange
+      // Fallback
+      doc.setFillColor(234, 88, 12); 
       doc.rect(logoRightX, logoY, logoBoxSizeRight, logoBoxSizeRight, 'F');
-      
-      // White Text inside Logo
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(5); 
-      doc.setFont('helvetica', 'bold');
-      doc.text('DEFESA CIVIL', logoRightX + (logoBoxSizeRight/2), logoY + 4, { align: 'center' });
-      doc.text('PARANÁ', logoRightX + (logoBoxSizeRight/2), logoY + logoBoxSizeRight - 3, { align: 'center' });
-      
-      // Triangle Symbol (Simplified)
-      const centerXIcon = logoRightX + (logoBoxSizeRight/2);
-      const centerYIcon = logoY + 10;
-      
-      doc.setFillColor(255, 255, 255);
-      doc.triangle(
-          centerXIcon, centerYIcon - 3, 
-          centerXIcon - 6, centerYIcon + 6, 
-          centerXIcon + 6, centerYIcon + 6, 
-          'F'
-      );
-      doc.setFillColor(30, 58, 138); // Blue
-      doc.triangle(
-          centerXIcon, centerYIcon, 
-          centerXIcon - 3, centerYIcon + 4, 
-          centerXIcon + 3, centerYIcon + 4, 
-          'F'
-      );
   }
 
   // --- Left Logo (Brasão) ---
@@ -111,18 +81,8 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
 
         doc.addImage(logoLeft, 'PNG', x, y, w, h);
       } catch(e) { console.warn("Error adding left logo", e); }
-  } else {
-      // Fallback: Placeholder Shield
-      doc.setDrawColor(0);
-      doc.setFillColor(255, 255, 255);
-      doc.rect(logoLeftX, logoY, logoBoxSizeLeft - 4, logoBoxSizeLeft, 'S'); // slightly narrower
-      doc.setFontSize(6);
-      doc.setTextColor(0);
-      doc.text('BRASÃO', logoLeftX + ((logoBoxSizeLeft-4)/2), logoY + (logoBoxSizeLeft/2), { align: 'center' });
-      doc.text('PR', logoLeftX + ((logoBoxSizeLeft-4)/2), logoY + (logoBoxSizeLeft/2) + 3, { align: 'center' });
   }
 
-  // Reset Font Color
   doc.setTextColor(0, 0, 0);
   return 45; // Start content below header
 };
@@ -133,14 +93,13 @@ const drawFooter = (doc: jsPDF, pageNumber: number, totalPages: number, pageWidt
     const footerY = pageHeight - footerHeight; 
     
     // Colored Bar Dimensions
-    const barHeight = 4; // Thickness of the line
-    const slantWidth = 6; // Width of the slant gap
-    const splitRatio = 0.80; // Split position (80% for blue, rest for green)
+    const barHeight = 4; 
+    const slantWidth = 6; 
+    const splitRatio = 0.80; 
     const splitX = pageWidth * splitRatio;
     const gapSize = 1.5;
 
     // -- Draw Blue Bar (Left) --
-    // Shape: Rect from 0 to splitX, slant bottom-left to top-right
     doc.setFillColor(0, 91, 159); // Standard Blue #005b9f
     doc.path([
         { op: 'm', c: [0, footerY] },
@@ -152,7 +111,6 @@ const drawFooter = (doc: jsPDF, pageNumber: number, totalPages: number, pageWidt
     doc.fill();
     
     // -- Draw Green Bar (Right) --
-    // Shape: Starts after gap, goes to end
     const greenStartX = splitX + gapSize;
     
     doc.setFillColor(0, 157, 87); // Flag Green
@@ -167,25 +125,22 @@ const drawFooter = (doc: jsPDF, pageNumber: number, totalPages: number, pageWidt
 
     // -- Footer Text --
     doc.setFontSize(8);
-    doc.setTextColor(0, 0, 0); // Black text requested
+    doc.setTextColor(0, 0, 0); 
     doc.setFont('helvetica', 'normal');
     
     let textY = footerY + barHeight + 5;
     const centerX = pageWidth / 2;
     
-    // Line 1: Address
     doc.text('Palácio das Araucárias - 1º andar - Setor C | Centro Cívico | Curitiba/PR | CEP 80.530-140', centerX, textY, { align: 'center' });
     textY += 4;
     
-    // Line 2: Contacts
     doc.text('E-mail: defesacivil@defesacivil.pr.gov.br | Fone: (41) 3281-2500', centerX, textY, { align: 'center' });
     textY += 4;
     
-    // Line 3: Slogan
     doc.setFont('helvetica', 'bold');
     doc.text('“Defesa Civil somos todos nós”', centerX, textY, { align: 'center' });
 
-    // Page number (Small, bottom right, unobtrusive)
+    // Page number
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
     doc.setTextColor(150, 150, 150);
@@ -204,7 +159,7 @@ export const generateLaudoPDF = async (
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
   const contentWidth = pageWidth - (margin * 2);
-  const bottomMargin = 25; // Space reserved for automatic footer
+  const bottomMargin = 30; // Increased reserved space
 
   // Initial Header
   let yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
@@ -214,58 +169,75 @@ export const generateLaudoPDF = async (
     if (yPos + heightNeeded > pageHeight - bottomMargin) {
         doc.addPage();
         yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
+        return true;
     }
+    return false;
   };
 
-  // Helper to format values that might be empty
   const formatValue = (value: string | undefined | null): string => {
-    if (!value || value.trim() === '') {
-        return 'NÃO INFORMADO';
-    }
+    if (!value || value.trim() === '') return 'NÃO INFORMADO';
     return value.toUpperCase();
   };
 
+  // ==========================================
+  // PÁGINA 1: IDENTIFICAÇÃO, DADOS E MAPA
+  // ==========================================
+
   // --- Title ---
-  checkPageBreak(20);
+  yPos += 5;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('LAUDO DE IMÓVEL AFETADO POR EVENTO CLIMÁTICO', pageWidth / 2, yPos, { align: 'center' });
   yPos += 15;
 
-  // --- General Info ---
-  checkPageBreak(20);
+  // --- 1. Localização e Data ---
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
+  // Creating a visual section header
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
+  doc.text('1. LOCALIZAÇÃO E DATA', margin + 2, yPos);
+  yPos += 8;
+
+  doc.setFontSize(10);
   doc.text('MUNICÍPIO:', margin, yPos);
   doc.setFont('helvetica', 'normal');
   doc.text(formatValue(data.municipio), margin + 25, yPos);
   
-  yPos += 7;
+  // Align Data to the right roughly
+  const dateLabelX = margin + 100;
   doc.setFont('helvetica', 'bold');
-  doc.text('DATA:', margin, yPos);
+  doc.text('DATA DA VISTORIA:', dateLabelX, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(new Date(data.data).toLocaleDateString('pt-BR'), margin + 15, yPos);
+  doc.text(new Date(data.data).toLocaleDateString('pt-BR'), dateLabelX + 40, yPos);
 
-  yPos += 15;
-  checkPageBreak(15);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('INFORMAÇÕES DO IMÓVEL', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 10;
+  yPos += 12;
 
-  // --- Property Info ---
+  // --- 3. Dados do Imóvel ---
   doc.setFontSize(11);
-  const addField = (label: string, value: string) => {
-    checkPageBreak(15); // Check if next field fits
+  doc.setFont('helvetica', 'bold');
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
+  doc.text('3. DADOS DO IMÓVEL', margin + 2, yPos);
+  yPos += 8;
+
+  doc.setFontSize(10);
+  const addField = (label: string, value: string, sameLine = false, xOffset = 0) => {
     doc.setFont('helvetica', 'bold');
-    doc.text(label, margin, yPos);
+    const drawX = margin + xOffset;
+    doc.text(label, drawX, yPos);
     const labelWidth = doc.getTextWidth(label);
     doc.setFont('helvetica', 'normal');
     
-    // Simple text wrapping for long addresses/descriptions
-    const splitText = doc.splitTextToSize(value, contentWidth - labelWidth - 2);
-    doc.text(splitText, margin + labelWidth + 2, yPos);
-    yPos += (splitText.length * 6) + 2; 
+    // Simple text wrapping
+    const maxWidth = sameLine ? (contentWidth/2 - labelWidth) : (contentWidth - labelWidth - 2);
+    const splitText = doc.splitTextToSize(value, maxWidth);
+    doc.text(splitText, drawX + labelWidth + 2, yPos);
+    
+    if (!sameLine) {
+        yPos += (splitText.length * 5) + 2; 
+    }
+    return splitText.length; // Return lines used
   };
 
   addField('ZONA:', formatValue(data.zona));
@@ -281,9 +253,8 @@ export const generateLaudoPDF = async (
 
   addField('PROPRIETÁRIO:', formatValue(data.proprietario));
   addField('REQUERENTE:', formatValue(data.requerente));
-  addField('CPF REQUERENTE:', formatValue(data.cpfRequerente));
+  addField('CPF:', formatValue(data.cpfRequerente));
   
-  // Construct address only from parts that exist, or fallback to NOT INFORMED
   let fullAddress = '';
   if (data.endereco || data.bairro || data.cep) {
       const parts = [];
@@ -301,194 +272,185 @@ export const generateLaudoPDF = async (
   const tipologiaText = data.tipologia === BuildingTypology.OUTRO ? data.tipologiaOutro : data.tipologia;
   addField('TIPOLOGIA:', formatValue(tipologiaText));
 
-  yPos += 5;
+  yPos += 2;
 
-  // --- Map Capture in PDF ---
-  checkPageBreak(90);
-  
+  // --- Map Capture ---
+  // Ensure map fits on page 1, otherwise it will just cut off (but layout is designed to fit)
   if (mapImage) {
-      // 1. Draw Image
       try {
-          // Adjust height based on aspect ratio of the container (approx 2:1 in MapPicker)
-          // We use a fixed height for consistency in the report
-          const mapHeight = 80;
+          const mapHeight = 85;
           doc.addImage(mapImage, 'PNG', margin, yPos, contentWidth, mapHeight);
-          
           doc.setDrawColor(0);
           doc.rect(margin, yPos, contentWidth, mapHeight);
 
-          // 2. Draw Vector Pin (Overlay)
-          // We assume the map is centered on the location.
+          // Vector Pin
           const pinX = margin + (contentWidth / 2);
           const pinY = yPos + (mapHeight / 2);
           
-          // Draw a Red Pin
-          doc.setFillColor(220, 38, 38); // Red-600
-          doc.setDrawColor(185, 28, 28); // Red-700
-          
-          // Circle head
+          doc.setFillColor(220, 38, 38); 
+          doc.setDrawColor(185, 28, 28); 
           doc.circle(pinX, pinY - 5, 3, 'FD');
-          
-          // Triangle tail
-          doc.triangle(
-              pinX - 3, pinY - 4,
-              pinX + 3, pinY - 4,
-              pinX, pinY,
-              'FD'
-          );
-          
-          // Small white dot in center
+          doc.triangle(pinX - 3, pinY - 4, pinX + 3, pinY - 4, pinX, pinY, 'FD');
           doc.setFillColor(255, 255, 255);
           doc.circle(pinX, pinY - 5, 1, 'F');
-          
-          // Reset colors
           doc.setTextColor(0);
 
       } catch(e) {
-          console.error("Failed to embed map image", e);
-          // Fallback box
-          doc.setDrawColor(0);
-          doc.setFillColor(240, 240, 240);
-          doc.rect(margin, yPos, contentWidth, 80, 'FD');
-          doc.text('[ERRO AO GERAR IMAGEM DO MAPA]', pageWidth / 2, yPos + 40, { align: 'center' });
+          console.error("Failed to embed map", e);
       }
-  } else {
-      // Placeholder if capture failed
-      doc.setDrawColor(0);
-      doc.setFillColor(240, 240, 240);
-      doc.rect(margin, yPos, contentWidth, 80, 'FD');
-      doc.setFontSize(10);
-      doc.text('[VISTA DE SATÉLITE - COORDENADAS: ' + coords + ']', pageWidth / 2, yPos + 40, { align: 'center' });
   }
 
-  yPos += 90;
+  // ==========================================
+  // PÁGINA 2+: DANOS
+  // ==========================================
+  doc.addPage();
+  yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
 
-  // --- Damages Header ---
-  checkPageBreak(25);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('LEVANTAMENTO DE DANOS', pageWidth / 2, yPos, { align: 'center' });
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
+  doc.text('4. LEVANTAMENTO DE DANOS', margin + 2, yPos);
   yPos += 10;
 
-  // --- Damages List ---
   data.danos.forEach((dano) => {
-    checkPageBreak(20);
-    doc.setFontSize(11);
+    // Check if title + description fits, otherwise break page
+    // Estimating 3 lines for description
+    checkPageBreak(30); 
+
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    
     const title = `${dano.type.toUpperCase()}: `;
-    const desc = dano.description;
-    
     doc.text(title, margin, yPos);
+    
     const titleWidth = doc.getTextWidth(title);
     doc.setFont('helvetica', 'normal');
     
+    const desc = dano.description || "Sem descrição detalhada.";
     const splitDesc = doc.splitTextToSize(desc, contentWidth - titleWidth);
     doc.text(splitDesc, margin + titleWidth, yPos);
     
-    yPos += (splitDesc.length * 6) + 5;
+    yPos += (splitDesc.length * 5) + 3;
 
-    // Photos
+    // Photos Grid
     if (dano.photos.length > 0) {
-      const photoWidth = (contentWidth - 10) / 2;
-      const photoHeight = 60;
-      
-      // Calculate needed space: 1 row of photos = height + padding
-      const rows = Math.ceil(dano.photos.length / 2);
-      const spaceNeeded = rows * (photoHeight + 5);
+      const photoWidth = (contentWidth - 6) / 2; // Slight gap
+      const photoHeight = 55; // Reduced slightly to fit more
+      const rowHeight = photoHeight + 6; // Height + padding
 
-      if (yPos + spaceNeeded > pageHeight - bottomMargin) {
-           doc.addPage();
-           yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
+      // Iterate photos in pairs
+      for (let i = 0; i < dano.photos.length; i += 2) {
+          const p1 = dano.photos[i];
+          const p2 = dano.photos[i+1];
+
+          // Check if this row fits
+          if (yPos + photoHeight > pageHeight - bottomMargin) {
+              doc.addPage();
+              yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
+          }
+
+          if (p1) {
+             try {
+                doc.addImage(p1, 'JPEG', margin, yPos, photoWidth, photoHeight);
+                doc.setDrawColor(200);
+                doc.rect(margin, yPos, photoWidth, photoHeight);
+             } catch(e) {}
+          }
+
+          if (p2) {
+             try {
+                doc.addImage(p2, 'JPEG', margin + photoWidth + 6, yPos, photoWidth, photoHeight);
+                doc.setDrawColor(200);
+                doc.rect(margin + photoWidth + 6, yPos, photoWidth, photoHeight);
+             } catch(e) {}
+          }
+
+          yPos += rowHeight;
       }
-
-      let xOffset = margin;
-      dano.photos.forEach((photo, idx) => {
-        if (idx > 3) return; // Limit for PDF safety
-        
-        // Wrap to next line if idx is even and not 0 (grid of 2)
-        if (idx > 0 && idx % 2 === 0) {
-             xOffset = margin;
-             yPos += photoHeight + 5;
-             checkPageBreak(photoHeight);
-        }
-
-        try {
-            doc.addImage(photo, 'JPEG', xOffset, yPos, photoWidth, photoHeight);
-            doc.setDrawColor(0);
-            doc.rect(xOffset, yPos, photoWidth, photoHeight); 
-        } catch (e) {
-            console.error("Error adding image", e);
-        }
-        xOffset += photoWidth + 10;
-      });
-      yPos += photoHeight + 10;
+      yPos += 2; // Extra small spacing after damage block
+    } else {
+        yPos += 5; // Spacing if no photos
     }
   });
+
+  // ==========================================
+  // BLOCO FINAL: CLASSIFICAÇÃO, PARECER E ASSINATURA
+  // ==========================================
   
-  // --- Actions/Classification ---
-  checkPageBreak(40);
-  yPos += 5;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('AÇÕES DO TORNADO / DESASTRE', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 15;
-
-  doc.setFontSize(11);
+  // Calculate total height needed for the closing block to keep it together
   const actionsData = DAMAGE_LOGIC[data.classificacao];
+  doc.setFontSize(10);
+  const parecerText = data.parecerFinal || "";
+  const splitParecer = doc.splitTextToSize(parecerText, contentWidth);
+  const parecerBlockHeight = (splitParecer.length * 5) + 20; // Text + Header + Padding
+  
+  const classificationBlockHeight = 40; // Approx height for Section 5
+  const signatureBlockHeight = 40; // Approx height for signature
+  
+  const totalClosingHeight = classificationBlockHeight + parecerBlockHeight + signatureBlockHeight;
 
-  addField('CLASSIFICAÇÃO:', data.classificacao.toUpperCase());
-  addField('NÍVEL DE DESTRUIÇÃO:', actionsData.level.toUpperCase());
-  addField('PERCENTUAL CONSIDERADO DE DESTRUIÇÃO:', actionsData.percent);
-
-  yPos += 5;
-
-  // --- Parecer Técnico Final ---
-  if (data.parecerFinal) {
-      checkPageBreak(30);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PARECER TÉCNICO FINAL', pageWidth / 2, yPos, { align: 'center' });
+  // If it doesn't fit, add page
+  if (yPos + totalClosingHeight > pageHeight - bottomMargin) {
+      doc.addPage();
+      yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
+  } else {
+      yPos += 5; // Separator
+      // Draw a line separator if staying on same page
+      doc.setDrawColor(200);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 10;
-
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      
-      const splitParecer = doc.splitTextToSize(data.parecerFinal, contentWidth);
-      
-      // Check if text block fits, if not page break and print rest
-      if (yPos + (splitParecer.length * 6) > pageHeight - bottomMargin) {
-          doc.addPage();
-          yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
-      }
-      
-      doc.text(splitParecer, margin, yPos);
-      yPos += (splitParecer.length * 6) + 5;
   }
 
+  // --- 5. Classificação ---
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
+  doc.text('5. CLASSIFICAÇÃO FINAL', margin + 2, yPos);
+  yPos += 10;
 
-  // --- Signature ---
-  checkPageBreak(40);
-  yPos += 30;
+  doc.setFontSize(10);
+  addField('CLASSIFICAÇÃO:', data.classificacao.toUpperCase());
+  addField('NÍVEL DE DESTRUIÇÃO:', actionsData.level.toUpperCase());
+  addField('PERCENTUAL ESTIMADO:', actionsData.percent);
   
-  // Electronic Signature for CEDEC
+  yPos += 8;
+
+  // --- 6. Parecer Técnico ---
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
+  doc.text('6. PARECER TÉCNICO FINAL', margin + 2, yPos);
+  yPos += 10;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(splitParecer, margin, yPos);
+  yPos += (splitParecer.length * 5) + 15;
+
+  // --- Identificação do Engenheiro (Signature) ---
+  // Electronic Signature
   if (selectedEngineer.institution === 'CEDEC') {
-      doc.setTextColor(100, 100, 100); // Gray
+      doc.setTextColor(100, 100, 100); 
       doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
       doc.text('Assinado Eletronicamente', pageWidth / 2, yPos - 5, { align: 'center' });
-      doc.setTextColor(0, 0, 0); // Reset to Black
+      doc.setTextColor(0, 0, 0); 
   }
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(selectedEngineer.name.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
   yPos += 5;
+  doc.setFontSize(10);
   doc.text('Engenheiro(a) Civil', pageWidth / 2, yPos, { align: 'center' });
   yPos += 5;
   const creaText = `CREA-${selectedEngineer.state || 'PR'} ${selectedEngineer.crea}`;
   doc.text(creaText, pageWidth / 2, yPos, { align: 'center' });
 
-  // --- Automatic Footer on All Pages ---
+
+  // --- Footer Loop ---
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
