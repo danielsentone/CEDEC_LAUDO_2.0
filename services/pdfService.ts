@@ -4,7 +4,10 @@ import { DAMAGE_LOGIC } from '../constants';
 
 const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: string, logoRight?: string): number => {
   const headerStart = 10;
-  const logoBoxSize = 25; // Max box size for logos to ensure equivalence
+  
+  // Define distinct box sizes to balance visual weight
+  const logoBoxSizeRight = 25; 
+  const logoBoxSizeLeft = 34; // Increased from 25 to 34 to match visual proportion with Defesa Civil logo
   
   // --- Center Text ---
   // We draw text first or concurrently. The logos sit on sides.
@@ -31,15 +34,15 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
   doc.text('FUNDO ESTADUAL PARA CALAMIDADES PÚBLICAS', centerX, textY, { align: 'center' });
 
   // --- Right Logo (Defesa Civil) ---
-  const logoRightX = pageWidth - margin - logoBoxSize;
+  const logoRightX = pageWidth - margin - logoBoxSizeRight;
   const logoY = headerStart;
 
   if (logoRight) {
      try {
         const props = doc.getImageProperties(logoRight);
         const ratio = props.width / props.height;
-        let w = logoBoxSize;
-        let h = logoBoxSize;
+        let w = logoBoxSizeRight;
+        let h = logoBoxSizeRight;
         
         // Calculate dimensions to contain within box (preserve aspect ratio)
         if (ratio > 1) {
@@ -49,8 +52,8 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
         }
         
         // Center vertically and horizontally in the box
-        const x = logoRightX + (logoBoxSize - w) / 2;
-        const y = logoY + (logoBoxSize - h) / 2;
+        const x = logoRightX + (logoBoxSizeRight - w) / 2;
+        const y = logoY + (logoBoxSizeRight - h) / 2;
 
         doc.addImage(logoRight, 'PNG', x, y, w, h);
      } catch(e) { console.warn("Error adding right logo", e); }
@@ -58,17 +61,17 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
       // Fallback: Vector Simulation of Defesa Civil PR Logo
       // Orange Box
       doc.setFillColor(234, 88, 12); // Orange
-      doc.rect(logoRightX, logoY, logoBoxSize, logoBoxSize, 'F');
+      doc.rect(logoRightX, logoY, logoBoxSizeRight, logoBoxSizeRight, 'F');
       
       // White Text inside Logo
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(5); 
       doc.setFont('helvetica', 'bold');
-      doc.text('DEFESA CIVIL', logoRightX + (logoBoxSize/2), logoY + 4, { align: 'center' });
-      doc.text('PARANÁ', logoRightX + (logoBoxSize/2), logoY + logoBoxSize - 3, { align: 'center' });
+      doc.text('DEFESA CIVIL', logoRightX + (logoBoxSizeRight/2), logoY + 4, { align: 'center' });
+      doc.text('PARANÁ', logoRightX + (logoBoxSizeRight/2), logoY + logoBoxSizeRight - 3, { align: 'center' });
       
       // Triangle Symbol (Simplified)
-      const centerXIcon = logoRightX + (logoBoxSize/2);
+      const centerXIcon = logoRightX + (logoBoxSizeRight/2);
       const centerYIcon = logoY + 10;
       
       doc.setFillColor(255, 255, 255);
@@ -94,8 +97,8 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
       try {
         const props = doc.getImageProperties(logoLeft);
         const ratio = props.width / props.height;
-        let w = logoBoxSize;
-        let h = logoBoxSize;
+        let w = logoBoxSizeLeft;
+        let h = logoBoxSizeLeft;
         
         if (ratio > 1) {
             h = w / ratio;
@@ -103,8 +106,8 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
             w = h * ratio;
         }
         
-        const x = logoLeftX + (logoBoxSize - w) / 2;
-        const y = logoY + (logoBoxSize - h) / 2;
+        const x = logoLeftX + (logoBoxSizeLeft - w) / 2;
+        const y = logoY + (logoBoxSizeLeft - h) / 2;
 
         doc.addImage(logoLeft, 'PNG', x, y, w, h);
       } catch(e) { console.warn("Error adding left logo", e); }
@@ -112,11 +115,11 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
       // Fallback: Placeholder Shield
       doc.setDrawColor(0);
       doc.setFillColor(255, 255, 255);
-      doc.rect(logoLeftX, logoY, logoBoxSize - 4, logoBoxSize, 'S'); // slightly narrower
+      doc.rect(logoLeftX, logoY, logoBoxSizeLeft - 4, logoBoxSizeLeft, 'S'); // slightly narrower
       doc.setFontSize(6);
       doc.setTextColor(0);
-      doc.text('BRASÃO', logoLeftX + ((logoBoxSize-4)/2), logoY + (logoBoxSize/2), { align: 'center' });
-      doc.text('PR', logoLeftX + ((logoBoxSize-4)/2), logoY + (logoBoxSize/2) + 3, { align: 'center' });
+      doc.text('BRASÃO', logoLeftX + ((logoBoxSizeLeft-4)/2), logoY + (logoBoxSizeLeft/2), { align: 'center' });
+      doc.text('PR', logoLeftX + ((logoBoxSizeLeft-4)/2), logoY + (logoBoxSizeLeft/2) + 3, { align: 'center' });
   }
 
   // Reset Font Color
