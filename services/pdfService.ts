@@ -10,7 +10,11 @@ const drawHeader = (doc: jsPDF, pageWidth: number, margin: number, logoLeft?: st
   const logoBoxSizeLeft = 34; 
   
   // --- Center Text ---
-  const centerX = pageWidth / 2;
+  // Calculates the visual center between the two logos to ensure equal spacing
+  const contentStartX = margin + logoBoxSizeLeft;
+  const contentEndX = pageWidth - margin - logoBoxSizeRight;
+  const centerX = (contentStartX + contentEndX) / 2;
+
   let textY = headerStart + 5;
 
   doc.setTextColor(0, 0, 0);
@@ -374,23 +378,23 @@ export const generateLaudoPDF = async (
   });
 
   // ==========================================
-  // BLOCO FINAL: CLASSIFICAÇÃO, PARECER E ASSINATURA
+  // BLOCO FINAL: CLASSIFICAÇÃO E PARECER (Agrupados)
   // ==========================================
   
-  // Calculate total height needed for the closing block to keep it together
+  // 1. Calculate height of Information Block (Sections 5 & 6)
   const actionsData = DAMAGE_LOGIC[data.classificacao];
   doc.setFontSize(10);
   const parecerText = data.parecerFinal || "";
   const splitParecer = doc.splitTextToSize(parecerText, contentWidth);
-  const parecerBlockHeight = (splitParecer.length * 5) + 20; // Text + Header + Padding
   
-  const classificationBlockHeight = 40; // Approx height for Section 5
-  const signatureBlockHeight = 40; // Approx height for signature
-  
-  const totalClosingHeight = classificationBlockHeight + parecerBlockHeight + signatureBlockHeight;
+  // Section 5 is approx 35mm
+  // Section 6 header is 10mm
+  // Section 6 text is lines * 5
+  // Extra padding 15mm
+  const infoBlockHeight = 35 + 10 + (splitParecer.length * 5) + 5; 
 
-  // If it doesn't fit, add page
-  if (yPos + totalClosingHeight > pageHeight - bottomMargin) {
+  // If Info block doesn't fit, break page
+  if (yPos + infoBlockHeight > pageHeight - bottomMargin) {
       doc.addPage();
       yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
   } else {
@@ -427,10 +431,29 @@ export const generateLaudoPDF = async (
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(splitParecer, margin, yPos);
-  yPos += (splitParecer.length * 5) + 15;
+  yPos += (splitParecer.length * 5); // Just text height
+
+  // ==========================================
+  // ASSINATURA (Com lógica de espaçamento)
+  // ==========================================
+
+  const signatureHeight = 35; 
+  const signatureGap = 35; // Large gap requested for manual signature
+
+  // Check if we can fit the signature with the LARGE gap on the current page
+  if (yPos + signatureGap + signatureHeight > pageHeight - bottomMargin) {
+      // If it doesn't fit with the large gap, move to new page
+      // On the new page, we treat it as "positioned alone", so standard spacing applies
+      doc.addPage();
+      yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
+      yPos += 10; // Standard small top margin
+  } else {
+      // Fits on same page, apply the large gap
+      yPos += signatureGap;
+  }
 
   // --- Identificação do Engenheiro (Signature) ---
-  // Electronic Signature
+  // Electronic Signature indicator
   if (selectedEngineer.institution === 'CEDEC') {
       doc.setTextColor(100, 100, 100); 
       doc.setFont('helvetica', 'italic');
