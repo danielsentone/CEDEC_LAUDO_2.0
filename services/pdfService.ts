@@ -97,6 +97,43 @@ const drawFooter = (doc: jsPDF, pageNumber: number, totalPages: number, pageWidt
     doc.text(`${pageNumber}/${totalPages}`, pageWidth - 5, pageHeight - 3, { align: 'right' });
 };
 
+// Helper to crop image to a specific aspect ratio (Width/Height)
+const cropImage = (base64: string, targetRatio: number): Promise<string> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const currentRatio = img.width / img.height;
+            let newWidth = img.width;
+            let newHeight = img.height;
+            
+            // If current is 'taller' than target (ratio smaller), we must crop height
+            if (currentRatio < targetRatio) {
+                newHeight = img.width / targetRatio;
+            } 
+            // If current is 'wider' than target, we usually keep it or crop width.
+            // To ensure strict fit to the box without empty space, we crop width if needed
+            // But usually wider is fine for maps. However, we want to match dimensions exactly.
+            else {
+                 newWidth = img.height * targetRatio;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            const ctx = canvas.getContext('2d');
+            if(!ctx) { resolve(base64); return; }
+
+            const startX = (img.width - newWidth) / 2;
+            const startY = (img.height - newHeight) / 2;
+
+            ctx.drawImage(img, startX, startY, newWidth, newHeight, 0, 0, newWidth, newHeight);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(base64);
+        img.src = base64;
+    });
+};
+
 export const generateLaudoPDF = async (
   data: LaudoForm, 
   selectedEngineer: Engineer,
@@ -210,39 +247,40 @@ export const generateLaudoPDF = async (
 
   if (mapImage) {
       try {
-          // Calculate Aspect Ratio to prevent deformation
-          const mapProps = doc.getImageProperties(mapImage);
-          const imgRatio = mapProps.height / mapProps.width;
-
-          // Target Width: 180mm (18cm) as requested
-          let mapWidth = 180; 
-          let mapHeight = mapWidth * imgRatio;
-
-          // Check available space on current page (Page 1)
+          // Calculate available space on Page 1
           const availableHeight = (pageHeight - bottomMargin) - yPos - 5;
+          const targetWidth = 180; // 18cm as requested
           
-          // If map is taller than remaining space, scale it down to fit available height
-          // This ensures it stays on Page 1 without deformation (maintaining aspect ratio)
-          if (mapHeight > availableHeight) {
-               mapHeight = availableHeight;
-               mapWidth = mapHeight / imgRatio;
-          }
+          // Default Target Ratio: 16:9 (Landscape)
+          // This ensures standard look on mobile/desktop. 
+          // 180 / (16/9) = ~101.25mm height.
+          let targetHeight = targetWidth / (16/9); 
 
-          // Center map horizontally
-          const mapX = (pageWidth - mapWidth) / 2;
+          // If available space is tight (less than 16:9 would take), we compress the target height
+          // This triggers a tighter crop, maintaining the 180mm width.
+          if (targetHeight > availableHeight) {
+              targetHeight = availableHeight;
+          }
           
-          doc.addImage(mapImage, 'PNG', mapX, yPos, mapWidth, mapHeight);
+          const targetRatio = targetWidth / targetHeight;
+
+          // Crop image to this ratio
+          const processedMap = await cropImage(mapImage, targetRatio);
+
+          const mapX = (pageWidth - targetWidth) / 2;
+          
+          doc.addImage(processedMap, 'PNG', mapX, yPos, targetWidth, targetHeight);
           
           // Border
           doc.setDrawColor(0);
           doc.setLineWidth(1.0); 
-          doc.rect(mapX, yPos, mapWidth, mapHeight, 'S');
+          doc.rect(mapX, yPos, targetWidth, targetHeight, 'S');
           doc.setLineWidth(0.2); 
 
           // Pin at visual center
           if (showPin) {
-            const pinX = mapX + (mapWidth / 2);
-            const pinY = yPos + (mapHeight / 2);
+            const pinX = mapX + (targetWidth / 2);
+            const pinY = yPos + (targetHeight / 2);
             doc.setFillColor(220, 38, 38); 
             doc.setDrawColor(185, 28, 28); 
             doc.circle(pinX, pinY - 5, 3, 'FD');
@@ -251,7 +289,7 @@ export const generateLaudoPDF = async (
             doc.circle(pinX, pinY - 5, 1, 'F');
           }
           
-          yPos += mapHeight + 5;
+          yPos += targetHeight + 5;
       } catch(e) { console.error("Failed to embed map", e); }
   }
 
