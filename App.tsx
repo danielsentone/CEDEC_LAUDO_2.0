@@ -37,6 +37,16 @@ const formatCPF = (value: string) => {
     .replace(/(-\d{2})\d+?$/, '$1');
 };
 
+// Helper for Protocolo Mask (11.111.111-1)
+const formatProtocolo = (value: string) => {
+  const numbers = value.replace(/\D/g, '');
+  return numbers
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
+    .substring(0, 12); // Limit length: XX.XXX.XXX-X is 12 chars
+};
+
 // Helper for Indicação Fiscal Mask (Updated Pattern: 00.00.000.0000.0000.0)
 const formatIndicacaoFiscal = (value: string) => {
   const numbers = value.replace(/\D/g, '');
@@ -201,6 +211,7 @@ function App() {
   const [formData, setFormData] = useState<LaudoForm>({
     municipio: 'Rio Bonito do Iguaçu',
     data: new Date().toISOString().split('T')[0],
+    protocolo: '',
     engineerId: '',
     zona: ZoneType.URBANO,
     indicacaoFiscal: '',
@@ -300,6 +311,7 @@ function App() {
   const [cpfValid, setCpfValid] = useState<boolean | null>(null);
   const [cpfErrorMessage, setCpfErrorMessage] = useState<string>('');
   const [indicacaoFiscalValid, setIndicacaoFiscalValid] = useState<boolean | null>(null);
+  const [protocoloValid, setProtocoloValid] = useState<boolean | null>(null);
 
   // Computed Values
   const selectedEngineer = engineers.find(e => e.id === formData.engineerId);
@@ -399,6 +411,28 @@ function App() {
         // No strict validation for other cities
         setIndicacaoFiscalValid(null);
     }
+  };
+
+  // Logic for Protocolo Change
+  const handleProtocoloChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = formatProtocolo(e.target.value);
+    setFormData(prev => ({ ...prev, protocolo: val }));
+    // Reset validation while typing
+    setProtocoloValid(null);
+  };
+
+  const handleProtocoloBlur = () => {
+      const val = formData.protocolo;
+      // Mask: 11.111.111-1 (12 chars total)
+      if (val.length > 0) {
+          if (val.length < 12) {
+              setProtocoloValid(false);
+          } else {
+              setProtocoloValid(true);
+          }
+      } else {
+          setProtocoloValid(false); // Mandatory field
+      }
   };
 
   const saveEngineer = () => {
@@ -558,8 +592,13 @@ function App() {
   const validateForm = () => {
     if (!selectedEngineer) { alert("Selecione um engenheiro"); return false; }
     if (!formData.municipio) { alert("Selecione um município"); return false; }
-    // Property Data fields are now optional
-    // Tipologia is optional
+    // Protocolo validation
+    if (!formData.protocolo || formData.protocolo.length < 12) { 
+        alert("Preencha o Protocolo (SID) corretamente."); 
+        setProtocoloValid(false);
+        return false; 
+    }
+    
     if (!formData.classificacao) { alert("Selecione a Classificação dos Danos"); return false; }
     
     // Validate Indicação Fiscal for Urban zone (New Length 21) - ONLY FOR RIO BONITO
@@ -590,8 +629,8 @@ function App() {
                     '.leaflet-control-container', // Zoom controls, attribution, etc.
                     '.map-custom-controls',       // Custom controls (Layers + GPS)
                     '.map-instruction',           // Bottom instruction text
-                    '.leaflet-marker-icon',       // Hide existing marker (we use vector pin in PDF)
-                    '.leaflet-marker-shadow'
+                    // We REMOVED .leaflet-marker-icon and .leaflet-marker-shadow from here
+                    // to ensure the pin is captured in the image.
                 ];
                 elementsToHide.forEach(selector => {
                     const el = clonedDoc.querySelector(selector);
@@ -619,6 +658,7 @@ function App() {
         .join(' | ');
 
     const payload = {
+        protocolo: formData.protocolo,
         municipio: formData.municipio,
         engineerName: selectedEngineer.name,
         engineerCrea: selectedEngineer.crea,
@@ -695,6 +735,7 @@ function App() {
                  // Reset Engineer:
                  engineerId: '', 
                  // Reset Other Fields:
+                 protocolo: '',
                  zona: ZoneType.URBANO,
                  indicacaoFiscal: '',
                  indicacaoFiscalParts: undefined,
@@ -721,6 +762,7 @@ function App() {
              setCpfValid(null);
              setCpfErrorMessage('');
              setIndicacaoFiscalValid(null);
+             setProtocoloValid(null);
 
              // 4. Reset Map View and Location Flag
              setMapState({ lat: defaultLat, lng: defaultLng });
@@ -764,9 +806,9 @@ function App() {
             <section className="bg-white rounded-xl shadow-md border-t-4 border-blue-600 overflow-hidden">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-2">
                     <MapPin className="text-orange-600" size={24} />
-                    <h2 className="text-lg font-bold text-blue-900 uppercase">1. Localização e Data</h2>
+                    <h2 className="text-lg font-bold text-blue-900 uppercase">1. Localização, Data e Protocolo</h2>
                 </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label className={labelClass}>Município</label>
                         <select 
@@ -788,6 +830,25 @@ function App() {
                             value={formData.data}
                             onChange={(e) => setFormData({...formData, data: e.target.value})}
                         />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Protocolo</label>
+                        <div className="relative">
+                            <input 
+                                type="text"
+                                className={`${inputClass} ${protocoloValid === false ? 'border-red-500 ring-1 ring-red-500' : ''} ${protocoloValid === true ? 'border-green-500 ring-1 ring-green-500' : ''}`}
+                                value={formData.protocolo}
+                                onChange={handleProtocoloChange}
+                                onBlur={handleProtocoloBlur}
+                                placeholder="11.111.111-1"
+                                maxLength={12}
+                            />
+                            <div className="absolute right-3 top-2.5">
+                                {protocoloValid === true && <CheckCircle size={20} className="text-green-600" />}
+                                {protocoloValid === false && <XCircle size={20} className="text-red-600" />}
+                            </div>
+                        </div>
+                        {protocoloValid === false && <p className="text-xs text-red-600 font-bold mt-1">Formato inválido ou incompleto</p>}
                     </div>
                 </div>
             </section>

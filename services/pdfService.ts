@@ -174,19 +174,34 @@ export const generateLaudoPDF = async (
   doc.setFont('helvetica', 'bold');
   doc.setFillColor(240, 240, 240);
   doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
-  doc.text('1. LOCALIZAÇÃO E DATA', margin + 2, yPos);
+  // Updated Title Section 1
+  doc.text('1. LOCALIZAÇÃO, DATA E PROTOCOLO', margin + 2, yPos);
   yPos += 8;
 
+  // Manually ensure standard font sizes and weights for Section 1 fields
+  // to match the automated fields below.
   doc.setFontSize(10);
+  
+  doc.setFont('helvetica', 'bold');
   doc.text('MUNICÍPIO:', margin, yPos);
+  
   doc.setFont('helvetica', 'normal');
   doc.text(formatValue(data.municipio), margin + 25, yPos);
   
   const dateLabelX = margin + 100;
   doc.setFont('helvetica', 'bold');
   doc.text('DATA DA VISTORIA:', dateLabelX, yPos);
+  
   doc.setFont('helvetica', 'normal');
   doc.text(new Date(data.data).toLocaleDateString('pt-BR'), dateLabelX + 40, yPos);
+  
+  yPos += 6; 
+  
+  doc.setFont('helvetica', 'bold');
+  doc.text('PROTOCOLO:', margin, yPos);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.text(formatValue(data.protocolo), margin + 27, yPos);
 
   yPos += 12;
 
@@ -277,17 +292,7 @@ export const generateLaudoPDF = async (
           doc.rect(mapX, yPos, targetWidth, targetHeight, 'S');
           doc.setLineWidth(0.2); 
 
-          // Pin at visual center
-          if (showPin) {
-            const pinX = mapX + (targetWidth / 2);
-            const pinY = yPos + (targetHeight / 2);
-            doc.setFillColor(220, 38, 38); 
-            doc.setDrawColor(185, 28, 28); 
-            doc.circle(pinX, pinY - 5, 3, 'FD');
-            doc.triangle(pinX - 3, pinY - 4, pinX + 3, pinY - 4, pinX, pinY, 'FD');
-            doc.setFillColor(255, 255, 255);
-            doc.circle(pinX, pinY - 5, 1, 'F');
-          }
+          // NOTE: Vector PIN drawing removed to use the captured image pin.
           
           yPos += targetHeight + 5;
       } catch(e) { console.error("Failed to embed map", e); }
@@ -397,7 +402,9 @@ export const generateLaudoPDF = async (
   if (mode === 'save') {
     const cleanText = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const formatDateForFilename = (dateStr: string) => { const p = dateStr.split('-'); return p.length === 3 ? `${p[2]}${p[1]}${p[0]}` : dateStr.replace(/[^0-9]/g, ''); };
-    doc.save(`${cleanText(data.municipio)}_${cleanText(data.requerente || 'NAO-INFORMADO')}_${formatDateForFilename(data.data)}.pdf`);
+    // Filename Format: [Protocolo]_[Municipio]_[Requerente]_[Data].pdf
+    const protocoloClean = cleanText(data.protocolo || 'SEM-PROTOCOLO');
+    doc.save(`${protocoloClean}_${cleanText(data.municipio)}_${cleanText(data.requerente || 'NAO-INFORMADO')}_${formatDateForFilename(data.data)}.pdf`);
   } else {
     return URL.createObjectURL(doc.output('blob'));
   }

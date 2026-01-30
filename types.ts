@@ -68,6 +68,7 @@ export interface LaudoForm {
   id_laudo?: string;
   municipio: string;
   data: string;
+  protocolo: string; // New field (SID)
   engineerId: string;
   customEngineer?: Engineer; // If editing or creating new
   
