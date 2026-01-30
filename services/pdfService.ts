@@ -148,7 +148,7 @@ export const generateLaudoPDF = async (
   
   // Standard Constants
   const FONT_SIZE_BODY = 10;
-  const LINE_HEIGHT = 5; // mm per line approx
+  const LINE_HEIGHT = 5; // mm per line approx (standard)
 
   let yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
 
@@ -364,7 +364,11 @@ export const generateLaudoPDF = async (
   doc.setFontSize(FONT_SIZE_BODY);
   doc.setFont('helvetica', 'normal');
   const splitParecer = doc.splitTextToSize(parecerText, contentWidth);
-  const textBlocksHeight = 25 + 10 + (splitParecer.length * LINE_HEIGHT) + 5; 
+
+  // Define Parecer line height (approx double spacing for 10pt font ~ 7mm)
+  const PARECER_LINE_HEIGHT_MM = 7; 
+
+  const textBlocksHeight = 25 + 10 + (splitParecer.length * PARECER_LINE_HEIGHT_MM) + 5; 
   const signatureHeight = 35; 
   const preferredSigGap = 35; 
   const minSigGap = 15;       
@@ -395,9 +399,15 @@ export const generateLaudoPDF = async (
   
   doc.setFontSize(FONT_SIZE_BODY); 
   doc.setFont('helvetica', 'normal');
-  // Removed custom LineHeightFactor to match standard spacing
+  
+  // Set Line Height Factor to 2.0 (Double Spacing)
+  doc.setLineHeightFactor(2.0);
+  
   doc.text(splitParecer, margin, yPos);
-  yPos += (splitParecer.length * LINE_HEIGHT); 
+  yPos += (splitParecer.length * PARECER_LINE_HEIGHT_MM); 
+
+  // Reset Line Height Factor to standard (approx 1.15) for subsequent texts (like signature)
+  doc.setLineHeightFactor(1.15);
 
   yPos += appliedSigGap;
 
