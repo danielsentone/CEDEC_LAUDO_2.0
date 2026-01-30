@@ -101,7 +101,8 @@ export const generateLaudoPDF = async (
   data: LaudoForm, 
   selectedEngineer: Engineer,
   mode: 'save' | 'preview' = 'save',
-  mapImage?: string
+  mapImage?: string,
+  showPin: boolean = true
 ): Promise<string | void> => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -184,7 +185,8 @@ export const generateLaudoPDF = async (
   }
   addField('PROPRIETÁRIO:', formatValue(data.proprietario));
   addField('REQUERENTE:', formatValue(data.requerente));
-  addField('CPF:', formatValue(data.cpfRequerente));
+  
+  addField('CPF DO REQUERENTE:', formatValue(data.cpfRequerente));
   
   let fullAddress = '';
   if (data.endereco || data.bairro || data.cep) {
@@ -195,50 +197,61 @@ export const generateLaudoPDF = async (
       fullAddress = parts.join(', ');
   }
   addField('ENDEREÇO:', formatValue(fullAddress));
-  addField('COORDENADAS:', `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`);
+  
+  if (showPin) {
+    addField('COORDENADAS:', `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`);
+  } else {
+    addField('COORDENADAS:', `NÃO ESPECIFICADO`);
+  }
+  
   addField('TIPOLOGIA:', formatValue(data.tipologia === BuildingTypology.OUTRO ? data.tipologiaOutro : data.tipologia));
 
   yPos += 2; 
 
   if (mapImage) {
       try {
-          // Lógica de Redimensionamento Inteligente
-          const MAX_SIZE = 120;
-          const MIN_SIZE = 60;
-          const availableSpace = (pageHeight - bottomMargin) - yPos - 5;
+          // Calculate Aspect Ratio to prevent deformation
+          const mapProps = doc.getImageProperties(mapImage);
+          const imgRatio = mapProps.height / mapProps.width;
 
-          let mapSize = MAX_SIZE;
+          // Target Width: 180mm (18cm) as requested
+          let mapWidth = 180; 
+          let mapHeight = mapWidth * imgRatio;
+
+          // Check available space on current page (Page 1)
+          const availableHeight = (pageHeight - bottomMargin) - yPos - 5;
           
-          if (availableSpace < MAX_SIZE) {
-              if (availableSpace >= MIN_SIZE) {
-                  mapSize = availableSpace;
-              } else {
-                  doc.addPage();
-                  yPos = drawHeader(doc, pageWidth, margin, data.logoEsquerda, data.logoDireita);
-                  yPos += 10;
-                  mapSize = MAX_SIZE;
-              }
+          // If map is taller than remaining space, scale it down to fit available height
+          // This ensures it stays on Page 1 without deformation (maintaining aspect ratio)
+          if (mapHeight > availableHeight) {
+               mapHeight = availableHeight;
+               mapWidth = mapHeight / imgRatio;
           }
 
-          const mapX = (pageWidth - mapSize) / 2;
-          doc.addImage(mapImage, 'PNG', mapX, yPos, mapSize, mapSize);
+          // Center map horizontally
+          const mapX = (pageWidth - mapWidth) / 2;
           
-          // Moldura preta grossa
+          doc.addImage(mapImage, 'PNG', mapX, yPos, mapWidth, mapHeight);
+          
+          // Border
           doc.setDrawColor(0);
-          doc.setLineWidth(1.0); // Moldura de 1mm de espessura
-          doc.rect(mapX, yPos, mapSize, mapSize, 'S');
-          doc.setLineWidth(0.2); // Reseta para espessura padrão
+          doc.setLineWidth(1.0); 
+          doc.rect(mapX, yPos, mapWidth, mapHeight, 'S');
+          doc.setLineWidth(0.2); 
 
-          const pinX = mapX + (mapSize / 2);
-          const pinY = yPos + (mapSize / 2);
-          doc.setFillColor(220, 38, 38); 
-          doc.setDrawColor(185, 28, 28); 
-          doc.circle(pinX, pinY - 5, 3, 'FD');
-          doc.triangle(pinX - 3, pinY - 4, pinX + 3, pinY - 4, pinX, pinY, 'FD');
-          doc.setFillColor(255, 255, 255);
-          doc.circle(pinX, pinY - 5, 1, 'F');
+          // Pin at visual center
+          if (showPin) {
+            const pinX = mapX + (mapWidth / 2);
+            const pinY = yPos + (mapHeight / 2);
+            doc.setFillColor(220, 38, 38); 
+            doc.setDrawColor(185, 28, 28); 
+            doc.circle(pinX, pinY - 5, 3, 'FD');
+            doc.triangle(pinX - 3, pinY - 4, pinX + 3, pinY - 4, pinX, pinY, 'FD');
+            doc.setFillColor(255, 255, 255);
+            doc.circle(pinX, pinY - 5, 1, 'F');
+          }
           
-          yPos += mapSize + 5;
+          yPos += mapHeight + 5;
       } catch(e) { console.error("Failed to embed map", e); }
   }
 
@@ -315,7 +328,20 @@ export const generateLaudoPDF = async (
   yPos += (splitParecer.length * lineHeight); 
 
   yPos += appliedSigGap;
-  if (selectedEngineer.institution === 'CEDEC') {
+
+  // Lista de engenheiros que NÃO devem ter a assinatura eletrônica
+  const engineersWithoutElectronicSignature = [
+    'Alessandra Santana Calegari',
+    'Regina De Toni',
+    'Carlos Germano Justi',
+    'Sandoval Schmitt',
+    'Cristian Schwarz',
+    'Tatiane Aparecida Mendes da Silva'
+  ];
+
+  const shouldShowElectronicSignature = selectedEngineer.institution === 'CEDEC' && !engineersWithoutElectronicSignature.includes(selectedEngineer.name);
+
+  if (shouldShowElectronicSignature) {
       doc.setTextColor(100, 100, 100); doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
       doc.text('Assinado Eletronicamente', pageWidth / 2, yPos - 5, { align: 'center' });
       doc.setTextColor(0, 0, 0); 

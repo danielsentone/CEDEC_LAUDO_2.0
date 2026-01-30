@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DamageType, DamageEntry } from '../types';
-import { Camera, Trash2, Plus } from 'lucide-react';
+import { Camera, Trash2, Plus, AlertTriangle } from 'lucide-react';
 
 interface DamageInputProps {
   value: DamageEntry[];
@@ -23,23 +23,32 @@ export const DamageInput: React.FC<DamageInputProps> = ({ value, onChange }) => 
     onChange(value.map(v => v.type === type ? { ...v, description: desc } : v));
   };
 
-  const handlePhotoUpload = (type: DamageType, files: FileList | null) => {
-    if (!files) return;
+  const handlePhotoUpload = async (type: DamageType, files: FileList | null) => {
+    if (!files || files.length === 0) return;
     
-    // Convert to base64
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        onChange(value.map(v => {
-            if (v.type === type) {
-                return { ...v, photos: [...v.photos, base64String] };
-            }
-            return v;
-        }));
-      };
-      reader.readAsDataURL(file);
+    // Create promises for reading all files
+    const filePromises = Array.from(files).map(file => {
+        return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (reader.result) {
+                    resolve(reader.result as string);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
     });
+
+    // Wait for all files to be read
+    const newPhotos = await Promise.all(filePromises);
+
+    // Single state update with all new photos appended
+    onChange(value.map(v => {
+        if (v.type === type) {
+            return { ...v, photos: [...v.photos, ...newPhotos] };
+        }
+        return v;
+    }));
   };
 
   const removePhoto = (type: DamageType, photoIndex: number) => {
@@ -156,4 +165,3 @@ export const DamageInput: React.FC<DamageInputProps> = ({ value, onChange }) => 
     </div>
   );
 };
-import { AlertTriangle } from 'lucide-react';

@@ -18,6 +18,7 @@ interface MapPickerProps {
   centerLng: number;
   selectedCity?: City;
   onLocationSelect: (lat: number, lng: number, addressData?: any) => void;
+  showMarker?: boolean;
 }
 
 // Component to handle map center updates when prop changes
@@ -60,7 +61,7 @@ const ClickHandler = ({ onSelect }: { onSelect: (lat: number, lng: number, fromG
   return null;
 };
 
-export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLocationSelect }) => {
+export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLocationSelect, showMarker = true }) => {
   const [layer, setLayer] = useState<'osm' | 'sat' | 'hybrid'>('hybrid'); // Default to Hybrid
   const [isLocating, setIsLocating] = useState(false);
   const ignoreRecenter = useRef(false);
@@ -176,7 +177,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({ centerLat, centerLng, onLo
         <MapController lat={centerLat} lng={centerLng} ignoreRecenter={ignoreRecenter} />
         <MapInvalidator />
         {/* The Marker is now controlled by props, so it always matches the form data (GPS or Manual) */}
-        <Marker position={[centerLat, centerLng]} />
+        {showMarker && <Marker position={[centerLat, centerLng]} />}
         <ClickHandler onSelect={handleSelect} />
       </MapContainer>
       <div className="map-instruction bg-blue-50 text-blue-800 text-xs p-2 text-center border-t border-blue-100 absolute bottom-0 w-full z-[400]">

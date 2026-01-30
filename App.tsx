@@ -225,12 +225,14 @@ function App() {
     parecerFinal: ''
   });
 
-  // Map Visualization State (Decoupled from Form Data)
-  // This ensures that editing the text fields manually doesn't break the map or unintentionally move it
+  // Map Visualization State
   const [mapState, setMapState] = useState({
       lat: -25.4897,
       lng: -52.5283
   });
+  
+  // Track if the location is specific (user clicked/GPS) or general (default city center)
+  const [isSpecificLocation, setIsSpecificLocation] = useState(false);
 
   // Sync State
   const [isSyncing, setIsSyncing] = useState(false);
@@ -267,7 +269,7 @@ function App() {
   }, []);
 
   // Auto-increment ID starting at 1, persisted in localStorage to simulate database sequence
-  const [idLaudo] = useState(() => {
+  const [idLaudo, setIdLaudo] = useState(() => {
     if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('laudo_seq');
         const next = stored ? parseInt(stored) + 1 : 1;
@@ -317,6 +319,9 @@ function App() {
     if (city) {
         setMapState({ lat: city.lat, lng: city.lng });
     }
+
+    // Reset specific location flag - user just picked a city, hasn't pinpointed address
+    setIsSpecificLocation(false);
 
     setFormData(prev => ({
       ...prev,
@@ -460,7 +465,10 @@ function App() {
   };
 
   const handleLocationSelect = (lat: number, lng: number, addressData?: any) => {
-    // When selecting from map, we update BOTH map view/marker AND form fields
+    // When selecting from map (click/gps), we are specific
+    setIsSpecificLocation(true);
+    
+    // Update BOTH map view/marker AND form fields
     setMapState({ lat, lng });
     setFormData(prev => ({
         ...prev,
@@ -646,7 +654,8 @@ function App() {
     if (!validateForm()) return;
     if (selectedEngineer) {
         const mapImg = await captureMap();
-        const url = await generateLaudoPDF({ ...formData, id_laudo: idLaudo }, selectedEngineer, 'preview', mapImg || undefined);
+        // Pass isSpecificLocation to control vector pin drawing
+        const url = await generateLaudoPDF({ ...formData, id_laudo: idLaudo }, selectedEngineer, 'preview', mapImg || undefined, isSpecificLocation);
         if (url) {
             setPreviewUrl(url);
             setShowPreview(true);
@@ -665,12 +674,66 @@ function App() {
 
         const mapImg = await captureMap();
         // Generate PDF
-        await generateLaudoPDF({ ...formData, id_laudo: idLaudo }, selectedEngineer, 'save', mapImg || undefined);
+        // Pass isSpecificLocation to control vector pin drawing
+        await generateLaudoPDF({ ...formData, id_laudo: idLaudo }, selectedEngineer, 'save', mapImg || undefined, isSpecificLocation);
         
-        // Wait a bit to show sync status then refresh
+        // Wait a bit to reset form without reload
         setTimeout(() => {
-             window.location.reload();
-        }, 3000); // Increased timeout to see the sync status
+             // 1. Increment ID
+             const nextId = (parseInt(idLaudo) + 1).toString();
+             setIdLaudo(nextId);
+             localStorage.setItem('laudo_seq', nextId);
+
+             // 2. Reset Fields (Keep Municipio, Data, Logos)
+             const currentCity = PARANA_CITIES.find(c => c.name === formData.municipio);
+             const defaultLat = currentCity ? currentCity.lat : -25.4897;
+             const defaultLng = currentCity ? currentCity.lng : -52.5283;
+
+             setFormData(prev => ({
+                 ...prev,
+                 // Keep: municipio, data, logos
+                 // Reset Engineer:
+                 engineerId: '', 
+                 // Reset Other Fields:
+                 zona: ZoneType.URBANO,
+                 indicacaoFiscal: '',
+                 indicacaoFiscalParts: undefined,
+                 inscricaoImobiliaria: '',
+                 matricula: '',
+                 nirfCib: '',
+                 incra: '',
+                 proprietario: '',
+                 requerente: '',
+                 cpfRequerente: '',
+                 endereco: '',
+                 bairro: '',
+                 cep: '',
+                 lat: defaultLat,
+                 lng: defaultLng,
+                 tipologia: '' as BuildingTypology,
+                 tipologiaOutro: '',
+                 danos: [],
+                 classificacao: '' as DamageClassification,
+                 parecerFinal: ''
+             }));
+
+             // 3. Reset Validation States
+             setCpfValid(null);
+             setCpfErrorMessage('');
+             setIndicacaoFiscalValid(null);
+
+             // 4. Reset Map View and Location Flag
+             setMapState({ lat: defaultLat, lng: defaultLng });
+             setIsSpecificLocation(false);
+
+             // 5. Reset Sync Status visually
+             setSyncStatus('idle');
+             
+             // Scroll to top
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+             alert("PDF gerado com sucesso! O formulário foi limpo para o próximo laudo.");
+        }, 1000); 
     }
   };
 
@@ -939,6 +1002,7 @@ function App() {
                             centerLat={mapState.lat}
                             centerLng={mapState.lng}
                             onLocationSelect={handleLocationSelect}
+                            showMarker={isSpecificLocation}
                         />
                     </div>
 
