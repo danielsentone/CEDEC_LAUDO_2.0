@@ -225,6 +225,13 @@ function App() {
     parecerFinal: ''
   });
 
+  // Map Visualization State (Decoupled from Form Data)
+  // This ensures that editing the text fields manually doesn't break the map or unintentionally move it
+  const [mapState, setMapState] = useState({
+      lat: -25.4897,
+      lng: -52.5283
+  });
+
   // Sync State
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -305,6 +312,12 @@ function App() {
   // Logic to center map on city selection
   const handleCityChange = (cityName: string) => {
     const city = PARANA_CITIES.find(c => c.name === cityName);
+    
+    // Update map view if city found
+    if (city) {
+        setMapState({ lat: city.lat, lng: city.lng });
+    }
+
     setFormData(prev => ({
       ...prev,
       municipio: cityName,
@@ -447,6 +460,8 @@ function App() {
   };
 
   const handleLocationSelect = (lat: number, lng: number, addressData?: any) => {
+    // When selecting from map, we update BOTH map view/marker AND form fields
+    setMapState({ lat, lng });
     setFormData(prev => ({
         ...prev,
         lat,
@@ -706,10 +721,9 @@ function App() {
                         <label className={labelClass}>Data da Vistoria</label>
                         <input 
                             type="date"
-                            className={`${inputClass} bg-gray-100 cursor-not-allowed opacity-75`}
+                            className={inputClass}
                             value={formData.data}
-                            readOnly
-                            tabIndex={-1}
+                            onChange={(e) => setFormData({...formData, data: e.target.value})}
                         />
                     </div>
                 </div>
@@ -922,8 +936,8 @@ function App() {
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                         <label className="block text-sm font-bold text-blue-900 mb-2">Localização Geográfica (Selecione no Mapa)</label>
                         <MapPicker 
-                            centerLat={formData.lat}
-                            centerLng={formData.lng}
+                            centerLat={mapState.lat}
+                            centerLng={mapState.lng}
                             onLocationSelect={handleLocationSelect}
                         />
                     </div>
@@ -944,11 +958,39 @@ function App() {
                         </div>
                         <div>
                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Latitude</label>
-                             <input type="number" step="any" value={formData.lat} onChange={e => setFormData({...formData, lat: parseFloat(e.target.value)})} className={inputClass} />
+                             <input 
+                                type="text"
+                                defaultValue={isNaN(formData.lat) ? '' : formData.lat}
+                                key={`lat-${formData.lat}`} // Force update if map changes formData
+                                onBlur={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '') {
+                                        setFormData({...formData, lat: NaN});
+                                    } else {
+                                        const num = parseFloat(val);
+                                        if (!isNaN(num)) setFormData({...formData, lat: num});
+                                    }
+                                }}
+                                className={inputClass}
+                             />
                         </div>
                         <div>
                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Longitude</label>
-                             <input type="number" step="any" value={formData.lng} onChange={e => setFormData({...formData, lng: parseFloat(e.target.value)})} className={inputClass} />
+                             <input 
+                                type="text" 
+                                defaultValue={isNaN(formData.lng) ? '' : formData.lng}
+                                key={`lng-${formData.lng}`} // Force update if map changes formData
+                                onBlur={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '') {
+                                        setFormData({...formData, lng: NaN});
+                                    } else {
+                                        const num = parseFloat(val);
+                                        if (!isNaN(num)) setFormData({...formData, lng: num});
+                                    }
+                                }}
+                                className={inputClass} 
+                             />
                         </div>
                     </div>
 
